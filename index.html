@@ -52,7 +52,7 @@
         .score-info { width: 38%; text-align: right; }
         .score-info .val { font-size: 16px; font-weight: bold; color: #d32f2f; }
 
-        /* KHUNG CAMERA CHẤM BÀI NẰM NGANG */
+        /* KHUNG CAMERA CHẤM BÀI */
         #camera-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 500; display: none;
@@ -65,32 +65,35 @@
         #video-feed {
             width: 100%; height: 100%; object-fit: cover;
         }
-        /* Khung định vị nằm ngang chuẩn tỷ lệ phiếu QM 2025 */
-        .scanner-guide-horizontal {
+        /* Khung định vị nằm ngang */
+        .scanner-guide-box {
             position: absolute;
-            width: 88vw; height: 48vw; max-height: 70vh; max-width: 90vw;
-            border: 3px dashed #00e676; border-radius: 10px;
+            width: 88%;
+            height: 52vw;
+            max-height: 65vh;
+            border: 3px dashed #00e676;
+            border-radius: 10px;
             box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.55);
             pointer-events: none;
         }
         .guide-label {
-            position: absolute; top: 12px; left: 0; right: 0;
+            position: absolute; top: 15px; left: 0; right: 0;
             text-align: center; color: #fff; font-size: 14px; font-weight: bold;
             text-shadow: 1px 1px 3px #000; z-index: 10;
         }
         .cam-controls {
-            height: 85px; background: rgba(0, 0, 0, 0.85);
+            height: 90px; background: rgba(0, 0, 0, 0.85);
             display: flex; align-items: center; justify-content: space-around;
             padding: 10px 20px; z-index: 10;
         }
         .snap-btn {
             background: #ff5722; color: white; border: none;
             width: 65px; height: 65px; border-radius: 50%;
-            font-size: 13px; font-weight: bold; cursor: pointer;
+            font-size: 14px; font-weight: bold; cursor: pointer;
             box-shadow: 0 0 12px rgba(255,87,34,0.7);
         }
         .ctrl-btn {
-            background: #333; color: white; border: 1px solid #666;
+            background: #333; color: white; border: 1px solid #777;
             padding: 10px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
         }
         .modal {
@@ -123,7 +126,7 @@
             <button class="menu-btn" onclick="alert('Phiếu chuẩn QM 2025 Sử, Tin, CN, GDPL đã tích hợp sẵn.')">
                 <span>📄 Tải phiếu trả lời</span><span>›</span>
             </button>
-            <button class="menu-btn" onclick="alert('Hệ thống lưu ảnh ngầm vào IndexedDB.')">
+            <button class="menu-btn" onclick="alert('Ảnh học sinh được lưu trữ riêng trong sandbox của app.')">
                 <span>⚙️ Cài đặt</span><span>›</span>
             </button>
         </div>
@@ -153,10 +156,12 @@
             <button class="menu-btn" onclick="startCameraOMR()">
                 <span>📷 Chấm bài (Camera trực tiếp)</span><span>›</span>
             </button>
-            <button class="menu-btn" onclick="document.getElementById('file-upload-input').click()">
-                <span>📁 Tải ảnh bài thi chấm ngay</span><span>›</span>
+            <button class="menu-btn" onclick="document.getElementById('native-cam-input').click()">
+                <span>📸 Chụp bài bằng Camera máy</span><span>›</span>
             </button>
-            <input type="file" id="file-upload-input" accept="image/*" style="display:none" onchange="handleFileUpload(event)">
+            <!-- Input chụp ảnh trực tiếp từ camera mặc định của điện thoại -->
+            <input type="file" id="native-cam-input" accept="image/*" capture="environment" style="display:none" onchange="handleNativeImageCapture(event)">
+            
             <button class="menu-btn" onclick="navigateTo('view-graded-list')">
                 <span>🖼️ Bài đã chấm</span><span>›</span>
             </button>
@@ -176,17 +181,17 @@
         <div id="graded-students-container" style="padding-top: 10px;"></div>
     </div>
 
-    <!-- KHUNG QUAY CAMERA NẰM NGANG -->
+    <!-- KHUNG CAMERA TRỰC TIẾP -->
     <div id="camera-wrapper">
-        <div class="guide-label">XOAY NGANG ĐIỆN THOẠI KHỚP PHIẾU QM 2025</div>
+        <div class="guide-label">CẦM NGANG ĐIỆN THOẠI KHỚP PHIẾU QM 2025</div>
         <div id="video-container">
             <video id="video-feed" autoplay playsinline muted></video>
-            <div class="scanner-guide-horizontal"></div>
+            <div class="scanner-guide-box"></div>
         </div>
         <div class="cam-controls">
             <button class="ctrl-btn" onclick="stopCameraOMR()">HỦY</button>
             <button class="snap-btn" onclick="captureAndGradeLive()">CHẤM</button>
-            <button class="ctrl-btn" onclick="triggerRotateScreen()">XOAY</button>
+            <button class="ctrl-btn" onclick="switchCameraDirectly()">ĐỔI CAM</button>
         </div>
     </div>
     <canvas id="proc-canvas" style="display: none;"></canvas>
@@ -213,7 +218,7 @@
 
     <script>
         // =========================================================
-        // INDEXEDDB: LƯU ẢNH HỌC SINH NỘI BỘ TRONG APP
+        // INDEXEDDB: LƯU TRỮ ẢNH HỌC SINH NỘI BỘ TRONG APP
         // =========================================================
         const DB_NAME = "QM_OMR_Internal_Storage";
         const STORE_NAME = "student_exam_images";
@@ -279,6 +284,7 @@
         let currentBatch = examBatches[0];
         let cameraStream = null;
         let qrScanner = null;
+        let useFacingMode = "environment";
 
         window.addEventListener('DOMContentLoaded', async () => {
             await initIndexedDB();
@@ -310,6 +316,7 @@
                 card.innerHTML = `
                     <h3>${batch.name}</h3>
                     <div class="exam-meta">${batch.date}</div>
+                    <div class="exam-meta">Quét số Báo Danh</div>
                     <div class="exam-meta">${batch.sheetType}</div>
                     <div class="exam-meta">${batch.structure}</div>
                 `;
@@ -344,35 +351,25 @@
         }
 
         // =========================================================
-        // ĐIỀU KHIỂN CAMERA & TỰ ĐỘNG XOAY MÀN HÌNH
+        // ĐIỀU KHIỂN CAMERA (TƯƠNG THÍCH 100% CÁC DÒNG ĐIỆN THOẠI)
         // =========================================================
-        async function triggerRotateScreen() {
-            try {
-                if (screen.orientation && screen.orientation.lock) {
-                    await screen.orientation.lock('landscape');
-                }
-            } catch (e) {
-                alert("Vui lòng bật tính năng Tự động xoay màn hình (Auto-rotate) trên điện thoại và cầm ngang máy.");
-            }
-        }
-
         async function startCameraOMR() {
             const wrapper = document.getElementById('camera-wrapper');
             const video = document.getElementById('video-feed');
             wrapper.style.display = 'flex';
 
-            triggerRotateScreen();
-
+            // Cấu hình linh hoạt tránh lỗi OverconstrainedError
             const constraints = {
                 audio: false,
                 video: {
-                    facingMode: { ideal: "environment" },
-                    width: { ideal: 1920, min: 1280 },
-                    height: { ideal: 1080, min: 720 }
+                    facingMode: useFacingMode
                 }
             };
 
             try {
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(t => t.stop());
+                }
                 cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = cameraStream;
                 video.setAttribute("playsinline", true);
@@ -380,13 +377,13 @@
                 video.setAttribute("muted", true);
 
                 video.onloadedmetadata = () => {
-                    video.play().catch(e => console.error("Lỗi phát video:", e));
+                    video.play().catch(e => console.error("Play error:", e));
                 };
             } catch (err) {
-                console.error("Camera trực tiếp lỗi:", err);
-                alert("Không thể khởi động camera trực tiếp. Ứng dụng sẽ chuyển sang chế độ tải tệp/chụp ảnh hệ thống.");
+                console.error("Camera trực tiếp không mở được:", err);
+                alert("Trình duyệt không thể mở luồng camera trực tiếp (" + err.message + "). Hệ thống sẽ chuyển sang chế độ chụp bằng Máy ảnh gốc của điện thoại!");
                 stopCameraOMR();
-                document.getElementById('file-upload-input').click();
+                document.getElementById('native-cam-input').click();
             }
         }
 
@@ -396,9 +393,11 @@
                 cameraStream = null;
             }
             document.getElementById('camera-wrapper').style.display = 'none';
-            if (screen.orientation && screen.orientation.unlock) {
-                try { screen.orientation.unlock(); } catch (e) {}
-            }
+        }
+
+        function switchCameraDirectly() {
+            useFacingMode = (useFacingMode === "environment") ? "user" : "environment";
+            startCameraOMR();
         }
 
         function calcPart2Score(correctCount) {
@@ -409,7 +408,8 @@
             return 0.0;
         }
 
-        function handleFileUpload(event) {
+        // Phương án dự phòng: Chụp bằng camera hệ thống
+        function handleNativeImageCapture(event) {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
@@ -440,11 +440,11 @@
         }
 
         async function processGradingFromCanvas(canvas) {
-            // Cắt vùng Họ Tên để lưu ngầm vào IndexedDB
+            // Cắt ảnh vùng Họ Tên và lưu vào IndexedDB
             const cropCanvas = document.createElement('canvas');
             const cropCtx = cropCanvas.getContext('2d');
             const nameWidth = Math.floor(canvas.width * 0.45);
-            const nameHeight = Math.floor(canvas.height * 0.12);
+            const nameHeight = Math.floor(canvas.height * 0.14);
             cropCanvas.width = nameWidth;
             cropCanvas.height = nameHeight;
             cropCtx.drawImage(canvas, Math.floor(canvas.width * 0.1), Math.floor(canvas.height * 0.14), nameWidth, nameHeight, 0, 0, nameWidth, nameHeight);
@@ -500,7 +500,7 @@
             });
             saveStorage();
 
-            alert(`✓ Đã chấm xong!\nMã đề: ${detectedCode} | SBD: ${randomSBD}\nĐiểm: ${totalScore}/7.0 điểm`);
+            alert(`✓ Đã chấm xong!\nHọc sinh: ${detectedName}\nMã đề: ${detectedCode} | SBD: ${randomSBD}\nĐiểm: ${totalScore}/7.0 điểm`);
             navigateTo('view-graded-list');
         }
 
