@@ -24,11 +24,19 @@ jobs:
           distribution: 'zulu'
           java-version: 17
 
+      - name: Create Capacitor Config
+        run: |
+          echo '{
+            "appId": "com.chamthi.omr2025",
+            "appName": "Cham Thi QM 2025",
+            "webDir": ".",
+            "bundledWebRuntime": false
+          }' > capacitor.config.json
+
       - name: Init Capacitor Environment
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "Cham Thi QM 2025" "com.chamthi.omr2025" --web-dir .
           npx cap add android
 
       - name: Copy Web Assets
