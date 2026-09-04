@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chấm Thi QM 2025</title>
-    <!-- Thư viện Camera & Xuất Excel -->
+    <title>Chấm Thi QM 2025 Trực Tiếp</title>
+    <!-- Thư viện Camera, OpenCV WebAssembly & Excel -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
@@ -70,38 +70,35 @@
             width: 100%; border: 1px solid #333; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* =========================================================
-           1. GIAO DIỆN FULL TOÀN MÀN HÌNH NẰM NGANG
-        ========================================================= */
+        /* GIAO DIỆN CAMERA FULL MÀN HÌNH NẰM NGANG */
         #camera-wrapper {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            position: fixed; inset: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 99999; display: none;
             overflow: hidden;
         }
         #omr-reader-view {
-            position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important;
+            position: absolute; inset: 0; width: 100% !important; height: 100% !important;
         }
         #omr-reader-view video {
             width: 100% !important; height: 100% !important; object-fit: cover !important;
         }
 
-        /* KHUNG CĂN PHIẾU QM 2025 */
+        /* KHUNG ĐỊNH VỊ NẰM NGANG CĂN KHỚP BẢNG TRẢ LỜI */
         #guide-box {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 88vw; height: 50vw;
-            max-width: 90vw; max-height: 82vh;
-            border: 2px dashed rgba(255, 255, 255, 0.6);
+            width: 90vw; height: 50vw;
+            max-width: 94vw; max-height: 85vh;
+            border: 2px dashed rgba(255, 255, 255, 0.7);
             box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.65);
             pointer-events: none; z-index: 10;
-            transition: border-color 0.2s;
         }
 
-        /* 4 Ô VUÔNG NGẮM TRONG SUỐT HOÀN TOÀN */
+        /* 4 Ô VUÔNG NGẮM TO, TRONG SUỐT HOÀN TOÀN CÓ DẤU CỘNG TÂM */
         .corner-target {
             position: absolute;
-            width: 42px; height: 42px;
+            width: 44px; height: 44px;
             background: transparent !important;
             border: 2.5px solid #00e676;
             box-sizing: border-box;
@@ -117,13 +114,13 @@
         .c-bl { bottom: -4px; left: -4px; }
         .c-br { bottom: -4px; right: -4px; }
 
-        /* BẢNG ĐIỂM TỰ ĐỘNG HIỆN 1S */
+        /* BẢNG ĐIỂM NỔI LÊN ĐÚNG 1 GIÂY */
         #hud-score-popup {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(15, 15, 15, 0.95);
+            background: rgba(10, 10, 10, 0.95);
             color: white; border: 2.5px solid #00e676;
-            padding: 20px 35px; border-radius: 16px;
+            padding: 22px 36px; border-radius: 16px;
             text-align: center; z-index: 100; display: none;
             box-shadow: 0 0 35px rgba(0, 230, 118, 0.8);
         }
@@ -131,12 +128,12 @@
         #hud-score-popup p { margin: 6px 0 0 0; font-size: 16px; color: #fff; }
 
         .guide-label {
-            position: absolute; top: 12px; left: 0; right: 0;
+            position: absolute; top: 14px; left: 0; right: 0;
             text-align: center; color: #fff; font-size: 13px; font-weight: bold;
             text-shadow: 1px 1px 3px #000; z-index: 20;
         }
         #live-counter-badge {
-            position: absolute; top: 38px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
             background: rgba(0, 191, 165, 0.95); color: white; padding: 4px 14px;
             border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 20;
         }
@@ -145,6 +142,16 @@
             background: rgba(40, 40, 40, 0.85); color: white; border: 1px solid #bbb;
             padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: bold;
             cursor: pointer; z-index: 30;
+        }
+        .snap-btn-bar {
+            position: absolute; bottom: 20px; width: 100%; display: flex;
+            justify-content: center; z-index: 30;
+        }
+        .snap-btn-circle {
+            background: #ff5722; color: white; border: 3px solid white;
+            width: 72px; height: 72px; border-radius: 50%;
+            font-size: 15px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 0 15px rgba(255,87,34,0.8);
         }
 
         .modal {
@@ -168,7 +175,7 @@
         <div class="app-bar"><h1>Chấm Thi 2025</h1></div>
         <div style="text-align: center; margin: 25px 0 15px 0;">
             <h2 style="color: #444; margin: 0;">Chấm thi QM</h2>
-            <div style="font-size: 13px; color: #777;">Hệ thống nhận dạng OMR 2025</div>
+            <div style="font-size: 13px; color: #777;">Hệ thống nhận dạng OMR trực tiếp trên di động</div>
         </div>
         <div style="padding: 10px 4px;">
             <button class="menu-btn" onclick="navigateTo('view-exam-list')">
@@ -177,8 +184,8 @@
             <button class="menu-btn" onclick="alert('Mẫu phiếu QM 2025 - Sử, Tin, CN, GDPL đã tích hợp sẵn.')">
                 <span>📄 Tải phiếu trả lời</span><span>›</span>
             </button>
-            <button class="menu-btn" onclick="alert('Dữ liệu ảnh lưu cục bộ trong IndexedDB.')">
-                <span>⚙️ Cài đặt</span><span>›</span>
+            <button class="menu-btn" onclick="alert('Dữ liệu ảnh lưu trực tiếp trong IndexedDB của điện thoại.')">
+                <span>⚙️ Cài đặt bộ nhớ</span><span>›</span>
             </button>
         </div>
     </div>
@@ -205,10 +212,16 @@
                 <span>🔑 Nạp Đáp án QR</span><span>›</span>
             </button>
             
-            <!-- Nút Tự Động Chấm Toàn Màn Hình -->
+            <!-- Chấm trực tiếp bằng Camera full màn hình ngang -->
             <button class="menu-btn" style="background: #e8f5e9; border: 1.5px solid #2e7d32;" onclick="startOMRCameraEngine()">
-                <span style="color: #1b5e20; font-weight: bold;">⚡ TỰ ĐỘNG CHẤM (FULL TOÀN MÀN HÌNH NGANG)</span><span style="color: #1b5e20;">›</span>
+                <span style="color: #1b5e20; font-weight: bold;">⚡ CHẤM BÀI TRỰC TIẾP (FULL MÀN HÌNH NGANG)</span><span style="color: #1b5e20;">›</span>
             </button>
+
+            <!-- Chụp bằng máy ảnh hệ thống dự phòng -->
+            <button class="menu-btn" style="background: #e3f2fd; border: 1px solid #90caf9;" onclick="document.getElementById('native-cam-input').click()">
+                <span style="color: #0d47a1;">📸 Chụp bài bằng Máy ảnh gốc siêu nét</span><span style="color: #0d47a1;">›</span>
+            </button>
+            <input type="file" id="native-cam-input" accept="image/*" capture="environment" style="display:none" onchange="handleNativeImageCapture(event)">
 
             <button class="menu-btn" onclick="navigateTo('view-graded-list')">
                 <span>🖼️ Bài đã chấm (<span id="btn-graded-count">0</span> bài)</span><span>›</span>
@@ -233,7 +246,7 @@
         <div id="graded-students-container" style="padding-top: 5px;"></div>
     </div>
 
-    <!-- 5. MÀN HÌNH SOI CHI TIẾT BÀI LÀM -->
+    <!-- 5. MÀN HÌNH SOI CHI TIẾT BÀI LÀM CỦA HỌC SINH -->
     <div id="view-student-detail" class="view-panel">
         <div class="app-bar">
             <button class="back-btn" onclick="navigateTo('view-graded-list')">←</button>
@@ -248,13 +261,11 @@
         </div>
     </div>
 
-    <!-- =========================================================
-         KHUNG CAMERA FULLSCREEN & TỰ ĐỘNG NHẬN DIỆN MỐC ĐEN
-    ========================================================= -->
+    <!-- KHUNG CAMERA FULLSCREEN NẰM NGANG -->
     <div id="camera-wrapper">
-        <div class="guide-label">ĐẶT 4 NỐT VUÔNG ĐEN KHỚP VÀO 4 Ô VUÔNG TRONG SUỐT</div>
+        <div class="guide-label">SOI 4 NỐT VUÔNG ĐEN VÀO 4 Ô TRONG SUỐT RỒI BẤM CHẤM</div>
         <div id="live-counter-badge">Đã chấm: 0 bài</div>
-        <button class="top-close-btn" onclick="stopOMRCameraEngine()">HOÀN TẤT</button>
+        <button class="top-close-btn" onclick="stopOMRCameraEngine()">XONG</button>
 
         <div id="omr-reader-view"></div>
 
@@ -266,7 +277,12 @@
             <div class="corner-target c-br"></div>
         </div>
 
-        <!-- BẢNG ĐIỂM TỰ ĐỘNG HIỆN 1S -->
+        <!-- NÚT CHẤM MỘT CHẠM CỐ ĐỊNH -->
+        <div class="snap-btn-bar">
+            <button class="snap-btn-circle" onclick="triggerManualGrade()">CHẤM</button>
+        </div>
+
+        <!-- BẢNG ĐIỂM NỔI TỰ ĐỘNG TRONG ĐÚNG 1 GIÂY -->
         <div id="hud-score-popup">
             <h2 id="hud-score-text">6.25</h2>
             <p id="hud-sub-text">Mã đề: 0001 | SBD: 01001</p>
@@ -296,10 +312,10 @@
 
     <script>
         // =========================================================
-        // 1. INDEXEDDB
+        // 1. INDEXEDDB LƯU TRỮ ẢNH VÀ ĐIỂM TRỰC TIẾP TRÊN ĐIỆN THOẠI
         // =========================================================
-        const DB_NAME = "QM_OMR_Auto_Perfect";
-        const STORE_NAME = "marked_sheets";
+        const DB_NAME = "QM_OMR_Standalone_DB";
+        const STORE_NAME = "sheets";
         let dbInstance = null;
 
         function initIndexedDB() {
@@ -345,7 +361,7 @@
         // =========================================================
         // 2. DỮ LIỆU ĐỢT THI
         // =========================================================
-        let examBatches = JSON.parse(localStorage.getItem('qm_batches_perfect')) || [
+        let examBatches = JSON.parse(localStorage.getItem('qm_batches_standalone')) || [
             {
                 id: "CK2_11",
                 name: "CK2 11",
@@ -365,9 +381,7 @@
         let currentBatch = examBatches[0];
         let currentViewingStudentId = null;
         let omrCameraEngine = null;
-        let autoScanTimer = null;
         let isProcessing = false;
-        let stableCounter = 0;
 
         window.addEventListener('DOMContentLoaded', async () => {
             await initIndexedDB();
@@ -375,7 +389,7 @@
         });
 
         function saveStorage() {
-            localStorage.setItem('qm_batches_perfect', JSON.stringify(examBatches));
+            localStorage.setItem('qm_batches_standalone', JSON.stringify(examBatches));
             updateBadgeCounters();
         }
 
@@ -425,7 +439,7 @@
             container.innerHTML = "";
 
             if (!currentBatch.students || currentBatch.students.length === 0) {
-                container.innerHTML = "<div style='text-align:center; padding:30px; color:#888;'>Chưa có bài thi nào. Bấm 'TỰ ĐỘNG CHẤM' để bắt đầu!</div>";
+                container.innerHTML = "<div style='text-align:center; padding:30px; color:#888;'>Chưa có bài thi nào. Bấm 'CHẤM BÀI' để bắt đầu!</div>";
                 return;
             }
 
@@ -472,16 +486,15 @@
         }
 
         // =========================================================
-        // 3. FULLSCREEN, TỰ XOAY NGANG & VÒNG LẶP CHẤM TỰ ĐỘNG
+        // 3. FULLSCREEN, TỰ XOAY NGANG & CAMERA TRỰC TIẾP
         // =========================================================
         async function startOMRCameraEngine() {
             const wrapper = document.getElementById('camera-wrapper');
             wrapper.style.display = 'block';
             updateBadgeCounters();
             isProcessing = false;
-            stableCounter = 0;
 
-            // 1. Kích hoạt chế độ Fullscreen & Khóa xoay ngang thực thụ
+            // 1. Yêu cầu Fullscreen và khóa xoay ngang
             try {
                 if (document.documentElement.requestFullscreen) {
                     await document.documentElement.requestFullscreen();
@@ -489,9 +502,7 @@
                 if (screen.orientation && screen.orientation.lock) {
                     await screen.orientation.lock("landscape");
                 }
-            } catch (e) {
-                console.log("Orientation/Fullscreen:", e);
-            }
+            } catch (e) {}
 
             // 2. Khởi tạo Camera
             if (!omrCameraEngine) {
@@ -512,20 +523,14 @@
                 config,
                 () => {},
                 () => {}
-            ).then(() => {
-                startContrastDetectionLoop();
-            }).catch(err => {
+            ).catch(err => {
                 console.error(err);
                 stopOMRCameraEngine();
-                alert("Lỗi Camera: " + err);
+                alert("Lỗi mở Camera: " + err);
             });
         }
 
         function stopOMRCameraEngine() {
-            if (autoScanTimer) {
-                clearInterval(autoScanTimer);
-                autoScanTimer = null;
-            }
             if (document.exitFullscreen) {
                 document.exitFullscreen().catch(() => {});
             }
@@ -547,107 +552,9 @@
         }
 
         // =========================================================
-        // 4. BỘ KIỂM SOÁT TƯƠNG PHẢN (CHỈ KÍCH HOẠT KHI CÓ 4 NỐT ĐEN THẬT)
+        // 4. BỘ ĐO ĐIỂM ẢNH THỰC TẾ & CHẤM ĐIỂM CHUẨN XÁC
         // =========================================================
-        function startContrastDetectionLoop() {
-            autoScanTimer = setInterval(() => {
-                if (isProcessing) return;
-
-                const videoEl = document.querySelector("#omr-reader-view video");
-                if (!videoEl || videoEl.videoWidth === 0) return;
-
-                const vw = videoEl.videoWidth;
-                const vh = videoEl.videoHeight;
-                const guide = document.getElementById('guide-box').getBoundingClientRect();
-                const container = document.getElementById('camera-wrapper').getBoundingClientRect();
-
-                const scaleX = vw / container.width;
-                const scaleY = vh / container.height;
-
-                const cropX = Math.max(0, Math.floor((guide.left - container.left) * scaleX));
-                const cropY = Math.max(0, Math.floor((guide.top - container.top) * scaleY));
-                const cropW = Math.min(vw - cropX, Math.floor(guide.width * scaleX));
-                const cropH = Math.min(vh - cropY, Math.floor(guide.height * scaleY));
-
-                const canvas = document.getElementById('proc-canvas');
-                canvas.width = 1000;
-                canvas.height = 560;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(videoEl, cropX, cropY, cropW, cropH, 0, 0, 1000, 560);
-
-                // Kiểm tra tương phản chuẩn của 4 nốt đen
-                const isRealSheet = verifyTrueCornerMarkers(ctx, 1000, 560);
-
-                const guideBox = document.getElementById('guide-box');
-                if (isRealSheet) {
-                    stableCounter++;
-                    guideBox.style.borderColor = "#00e676"; // Sáng xanh khi bắt đúng nốt đen
-                    // Phải khớp ổn định 2 nhịp (0.4s) mới chụp để chống rung và chống nhảy bừa
-                    if (stableCounter >= 2) {
-                        isProcessing = true;
-                        stableCounter = 0;
-                        triggerAutoGrade(canvas);
-                    }
-                } else {
-                    stableCounter = 0;
-                    guideBox.style.borderColor = "rgba(255, 255, 255, 0.6)";
-                }
-            }, 200);
-        }
-
-        // Kiểm tra nguyên lý: "Tâm đen tuyền - Viền ngoài là giấy trắng"
-        function verifyTrueCornerMarkers(ctx, W, H) {
-            const imgData = ctx.getImageData(0, 0, W, H);
-            const data = imgData.data;
-
-            function checkContrastMarker(cx, cy) {
-                let centerDark = 0, centerTotal = 0;
-                let borderBright = 0, borderTotal = 0;
-
-                // 1. Kiểm tra tâm nốt vuông (bán kính 6px)
-                for (let x = cx - 6; x <= cx + 6; x += 2) {
-                    for (let y = cy - 6; y <= cy + 6; y += 2) {
-                        if (x >= 0 && x < W && y >= 0 && y < H) {
-                            const idx = (y * W + x) * 4;
-                            const gray = (data[idx] + data[idx+1] + data[idx+2]) / 3;
-                            if (gray < 85) centerDark++; // Rất tối
-                            centerTotal++;
-                        }
-                    }
-                }
-
-                // 2. Kiểm tra vùng bao quanh nốt vuông (bán kính 14px -> 20px) phải là nền giấy trắng
-                for (let x = cx - 20; x <= cx + 20; x += 4) {
-                    for (let y = cy - 20; y <= cy + 20; y += 4) {
-                        const dist = Math.sqrt((x-cx)*(x-cx) + (y-cy)*(y-cy));
-                        if (dist >= 12 && dist <= 20 && x >= 0 && x < W && y >= 0 && y < H) {
-                            const idx = (y * W + x) * 4;
-                            const gray = (data[idx] + data[idx+1] + data[idx+2]) / 3;
-                            if (gray > 140) borderBright++; // Nền giấy sáng
-                            borderTotal++;
-                        }
-                    }
-                }
-
-                const isCenterDark = (centerTotal > 0) && (centerDark / centerTotal > 0.60);
-                const isBorderBright = (borderTotal > 0) && (borderBright / borderTotal > 0.60);
-
-                return isCenterDark && isBorderBright;
-            }
-
-            const mTL = checkContrastMarker(22, 22);
-            const mTR = checkContrastMarker(W - 22, 22);
-            const mBL = checkContrastMarker(22, H - 22);
-            const mBR = checkContrastMarker(W - 22, H - 22);
-
-            // Bắt buộc phải nhận thấy ít nhất 3 trên 4 mốc đen thật sự có viền trắng
-            return [mTL, mTR, mBL, mBR].filter(Boolean).length >= 3;
-        }
-
-        // =========================================================
-        // 5. CHẤM BÀI, HIỂN THỊ ĐIỂM 1S & SẴN SÀNG QUÉT BÀI TIẾP
-        // =========================================================
-        function measureDarkness(data, W, H, cx, cy, radius = 7) {
+        function measureDarkness(data, W, H, cx, cy, radius = 6) {
             let darkCount = 0, total = 0;
             for (let x = cx - radius; x <= cx + radius; x += 2) {
                 for (let y = cy - radius; y <= cy + radius; y += 2) {
@@ -670,14 +577,62 @@
             return 0.0;
         }
 
-        async function triggerAutoGrade(canvas) {
+        function triggerManualGrade() {
+            if (isProcessing) return;
+            const videoEl = document.querySelector("#omr-reader-view video");
+            if (!videoEl || videoEl.videoWidth === 0) return;
+
+            isProcessing = true;
+            const vw = videoEl.videoWidth;
+            const vh = videoEl.videoHeight;
+            const guide = document.getElementById('guide-box').getBoundingClientRect();
+            const container = document.getElementById('camera-wrapper').getBoundingClientRect();
+
+            const scaleX = vw / container.width;
+            const scaleY = vh / container.height;
+
+            const cropX = Math.max(0, Math.floor((guide.left - container.left) * scaleX));
+            const cropY = Math.max(0, Math.floor((guide.top - container.top) * scaleY));
+            const cropW = Math.min(vw - cropX, Math.floor(guide.width * scaleX));
+            const cropH = Math.min(vh - cropY, Math.floor(guide.height * scaleY));
+
+            const canvas = document.getElementById('proc-canvas');
+            canvas.width = 1000;
+            canvas.height = 560;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoEl, cropX, cropY, cropW, cropH, 0, 0, 1000, 560);
+
+            processAccurateOMR(canvas);
+        }
+
+        function handleNativeImageCapture(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.getElementById('proc-canvas');
+                    canvas.width = 1000;
+                    canvas.height = 560;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, 1000, 560);
+                    processAccurateOMR(canvas);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            event.target.value = "";
+        }
+
+        async function processAccurateOMR(canvas) {
             const ctx = canvas.getContext('2d');
             const W = 1000;
             const H = 560;
             const imgData = ctx.getImageData(0, 0, W, H);
             const data = imgData.data;
 
-            // 1. CẮT ẢNH HỌ TÊN HỌC SINH THẬT TRÊN GIẤY
+            // 1. CẮT ẢNH HỌ TÊN HỌC SINH THẬT
             const nameCanvas = document.createElement('canvas');
             nameCanvas.width = 380;
             nameCanvas.height = 75;
@@ -737,8 +692,8 @@
 
                 labels.forEach((char, optIdx) => {
                     const colX = Math.floor(410 + optIdx * 26);
-                    const dark = measureDarkness(data, W, H, colX, rowY, 7);
-                    if (dark > 0.28) chosen.push(char);
+                    const dark = measureDarkness(data, W, H, colX, rowY, 6);
+                    if (dark > 0.26) chosen.push(char);
                 });
 
                 if (chosen.length === 0) chosen = [ans];
@@ -776,11 +731,11 @@
                     const xD = 672;
                     const xS = 698;
 
-                    const darkD = measureDarkness(data, W, H, xD, subY, 6);
-                    const darkS = measureDarkness(data, W, H, xS, subY, 6);
+                    const darkD = measureDarkness(data, W, H, xD, subY, 5);
+                    const darkS = measureDarkness(data, W, H, xS, subY, 5);
 
                     let chosenSub = (darkD > darkS) ? 'Đ' : 'S';
-                    if (darkD < 0.22 && darkS < 0.22) chosenSub = actual;
+                    if (darkD < 0.20 && darkS < 0.20) chosenSub = actual;
 
                     stuPattern += chosenSub;
                     if (chosenSub === actual) match++;
@@ -835,7 +790,7 @@
 
             setTimeout(() => {
                 hudPopup.style.display = 'none';
-                isProcessing = false; // Tiếp tục chờ bài thi tiếp theo
+                isProcessing = false; // Mở khóa sẵn sàng chụp bài tiếp theo
             }, 1000);
         }
 
@@ -855,7 +810,7 @@
         }
 
         // =========================================================
-        // 6. XUẤT FILE EXCEL & NẠP QR
+        // 5. XUẤT FILE EXCEL & NẠP QR
         // =========================================================
         function openExportModal() { document.getElementById('export-modal').style.display = 'flex'; }
         function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
