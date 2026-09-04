@@ -51,8 +51,50 @@
         .name-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .score-info { width: 38%; text-align: right; }
         .score-info .val { font-size: 16px; font-weight: bold; color: #d32f2f; }
+
+        /* KHUNG CAMERA CHẤM BÀI NẰM NGANG */
+        #camera-wrapper {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #000; z-index: 500; display: none;
+            flex-direction: column; justify-content: space-between;
+        }
+        #video-container {
+            position: relative; width: 100%; flex: 1;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        #video-feed {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        /* Khung định vị nằm ngang chuẩn tỷ lệ phiếu QM 2025 */
+        .scanner-guide-horizontal {
+            position: absolute;
+            width: 88vw; height: 48vw; max-height: 70vh; max-width: 90vw;
+            border: 3px dashed #00e676; border-radius: 10px;
+            box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.55);
+            pointer-events: none;
+        }
+        .guide-label {
+            position: absolute; top: 12px; left: 0; right: 0;
+            text-align: center; color: #fff; font-size: 14px; font-weight: bold;
+            text-shadow: 1px 1px 3px #000; z-index: 10;
+        }
+        .cam-controls {
+            height: 85px; background: rgba(0, 0, 0, 0.85);
+            display: flex; align-items: center; justify-content: space-around;
+            padding: 10px 20px; z-index: 10;
+        }
+        .snap-btn {
+            background: #ff5722; color: white; border: none;
+            width: 65px; height: 65px; border-radius: 50%;
+            font-size: 13px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 0 12px rgba(255,87,34,0.7);
+        }
+        .ctrl-btn {
+            background: #333; color: white; border: 1px solid #666;
+            padding: 10px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
+        }
         .modal {
-            display: none; position: fixed; z-index: 200; left: 0; top: 0;
+            display: none; position: fixed; z-index: 600; left: 0; top: 0;
             width: 100%; height: 100%; background: rgba(0,0,0,0.5);
             align-items: center; justify-content: center;
         }
@@ -63,32 +105,6 @@
             display: block; width: 100%; padding: 12px 0; text-align: left;
             background: none; border: none; font-size: 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer;
         }
-        #camera-wrapper {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 300; display: none;
-            flex-direction: column; justify-content: space-between;
-        }
-        #video-feed { width: 100%; height: 80vh; object-fit: cover; }
-        .scanner-guide {
-            position: absolute; top: 12%; left: 5%; right: 5%; bottom: 22%;
-            border: 2px dashed #00e676; border-radius: 8px; pointer-events: none;
-        }
-        .cam-controls {
-            height: 20vh; background: #111; display: flex;
-            align-items: center; justify-content: space-around; padding: 10px;
-        }
-        .snap-btn {
-            background: #ff5722; color: white; border: none;
-            width: 70px; height: 70px; border-radius: 50%;
-            font-size: 13px; font-weight: bold; cursor: pointer;
-        }
-        .fab-btn {
-            position: fixed; bottom: 24px; right: 24px;
-            background: var(--accent-green); color: white;
-            width: 58px; height: 58px; border-radius: 50%;
-            border: none; font-size: 28px; display: flex;
-            align-items: center; justify-content: center; cursor: pointer;
-        }
     </style>
 </head>
 <body>
@@ -98,25 +114,22 @@
         <div class="app-bar"><h1>Chấm Thi 2025</h1></div>
         <div style="text-align: center; margin: 25px 0 15px 0;">
             <h2 style="color: #444; margin: 0;">Chấm thi QM</h2>
-            <div style="font-size: 13px; color: #777;">Lưu trữ bài thi nội bộ</div>
+            <div style="font-size: 13px; color: #777;">Hệ thống nhận dạng OMR 2025</div>
         </div>
         <div style="padding: 10px 4px;">
             <button class="menu-btn" onclick="navigateTo('view-exam-list')">
                 <span>📑 Danh sách chấm</span><span>›</span>
             </button>
-            <button class="menu-btn" onclick="alert('Đã sẵn sàng mẫu phiếu QM 2025!')">
+            <button class="menu-btn" onclick="alert('Phiếu chuẩn QM 2025 Sử, Tin, CN, GDPL đã tích hợp sẵn.')">
                 <span>📄 Tải phiếu trả lời</span><span>›</span>
             </button>
-            <button class="menu-btn" onclick="alert('Dữ liệu ảnh được mã hóa và lưu trữ cục bộ trong app.')">
-                <span>⚙️ Cài đặt bộ nhớ</span><span>›</span>
-            </button>
-            <button class="menu-btn" onclick="navigateTo('view-exam-list')">
-                <span>👥 Lớp học</span><span>›</span>
+            <button class="menu-btn" onclick="alert('Hệ thống lưu ảnh ngầm vào IndexedDB.')">
+                <span>⚙️ Cài đặt</span><span>›</span>
             </button>
         </div>
     </div>
 
-    <!-- 2. MÀN HÌNH DANH SÁCH ĐỢT THI -->
+    <!-- 2. DANH SÁCH ĐỢT THI -->
     <div id="view-exam-list" class="view-panel">
         <div class="app-bar">
             <button class="back-btn" onclick="navigateTo('view-home')">←</button>
@@ -124,10 +137,9 @@
             <div></div>
         </div>
         <div id="exam-cards-container" style="padding-top: 10px;"></div>
-        <button class="fab-btn" onclick="createNewExamBatch()">+</button>
     </div>
 
-    <!-- 3. MÀN HÌNH CHI TIẾT BÀI THI -->
+    <!-- 3. CHI TIẾT ĐỢT THI -->
     <div id="view-exam-detail" class="view-panel">
         <div class="app-bar">
             <button class="back-btn" onclick="navigateTo('view-exam-list')">←</button>
@@ -136,35 +148,50 @@
         </div>
         <div style="padding-top: 14px;">
             <button class="menu-btn" onclick="openKeySyncDialog()">
-                <span>🔑 Đáp án</span><span>›</span>
+                <span>🔑 Nạp Đáp án QR</span><span>›</span>
             </button>
             <button class="menu-btn" onclick="startCameraOMR()">
-                <span>📷 Chấm bài</span><span>›</span>
+                <span>📷 Chấm bài (Camera trực tiếp)</span><span>›</span>
             </button>
+            <button class="menu-btn" onclick="document.getElementById('file-upload-input').click()">
+                <span>📁 Tải ảnh bài thi chấm ngay</span><span>›</span>
+            </button>
+            <input type="file" id="file-upload-input" accept="image/*" style="display:none" onchange="handleFileUpload(event)">
             <button class="menu-btn" onclick="navigateTo('view-graded-list')">
                 <span>🖼️ Bài đã chấm</span><span>›</span>
             </button>
             <button class="menu-btn" onclick="openExportModal()">
-                <span>📤 Xuất kết quả</span><span>›</span>
+                <span>📤 Xuất kết quả Excel</span><span>›</span>
             </button>
         </div>
     </div>
 
-    <!-- 4. MÀN HÌNH BÀI ĐÃ CHẤM -->
+    <!-- 4. DANH SÁCH BÀI ĐÃ CHẤM -->
     <div id="view-graded-list" class="view-panel">
         <div class="app-bar">
             <button class="back-btn" onclick="navigateTo('view-exam-detail')">←</button>
             <h1 id="graded-header-title">CK2 11</h1>
             <div></div>
         </div>
-        <div style="background: white; padding: 10px 14px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; font-size: 14px;">
-            <span>Lọc: <b>Tất cả</b></span>
-            <span>Sắp xếp: <b>Mặc định</b></span>
-        </div>
-        <div id="graded-students-container"></div>
+        <div id="graded-students-container" style="padding-top: 10px;"></div>
     </div>
 
-    <!-- MODAL XUẤT EXCEL -->
+    <!-- KHUNG QUAY CAMERA NẰM NGANG -->
+    <div id="camera-wrapper">
+        <div class="guide-label">XOAY NGANG ĐIỆN THOẠI KHỚP PHIẾU QM 2025</div>
+        <div id="video-container">
+            <video id="video-feed" autoplay playsinline muted></video>
+            <div class="scanner-guide-horizontal"></div>
+        </div>
+        <div class="cam-controls">
+            <button class="ctrl-btn" onclick="stopCameraOMR()">HỦY</button>
+            <button class="snap-btn" onclick="captureAndGradeLive()">CHẤM</button>
+            <button class="ctrl-btn" onclick="triggerRotateScreen()">XOAY</button>
+        </div>
+    </div>
+    <canvas id="proc-canvas" style="display: none;"></canvas>
+
+    <!-- POPUP XUẤT EXCEL -->
     <div id="export-modal" class="modal">
         <div class="modal-box">
             <h3>Xuất kết quả</h3>
@@ -175,104 +202,76 @@
         </div>
     </div>
 
-    <!-- MODAL CAMERA CHẤM BÀI -->
-    <div id="camera-wrapper">
-        <video id="video-feed" playsinline autoplay></video>
-        <div class="scanner-guide"></div>
-        <div style="position: absolute; top: 15px; left: 15px; color: white; font-weight: bold;">
-            Đặt phiếu QM 2025 vào khung
-        </div>
-        <div class="cam-controls">
-            <button style="background: #444; color: white; border: none; padding: 10px 16px; border-radius: 6px;" onclick="stopCameraOMR()">Hủy</button>
-            <button class="snap-btn" onclick="captureAndGradeLive()">CHẤM</button>
-            <button style="background: #444; color: white; border: none; padding: 10px 16px; border-radius: 6px;" onclick="alert('Đèn flash sẵn sàng.')">Đèn</button>
-        </div>
-    </div>
-    <canvas id="proc-canvas" style="display: none;"></canvas>
-
-    <!-- MODAL QUÉT QR NẠP ĐÁP ÁN -->
+    <!-- POPUP NẠP QR -->
     <div id="qr-dialog" class="modal">
         <div class="modal-box" style="text-align: center;">
             <h3>Nạp Đáp Án Đợt Thi</h3>
             <div id="qr-reader" style="width: 100%; margin: 0 auto;"></div>
-            <button style="background: #444; color: white; border: none; padding: 10px; border-radius: 6px; margin-top: 10px; width: 100%;" onclick="closeKeySyncDialog()">Đóng</button>
+            <button class="ctrl-btn" style="width: 100%; margin-top: 10px;" onclick="closeKeySyncDialog()">Đóng</button>
         </div>
     </div>
 
     <script>
         // =========================================================
-        // KHỞI TẠO INDEXEDDB LƯU TRỮ ẢNH HỌC SINH NỘI BỘ (SANDBOX)
+        // INDEXEDDB: LƯU ẢNH HỌC SINH NỘI BỘ TRONG APP
         // =========================================================
         const DB_NAME = "QM_OMR_Internal_Storage";
-        const DB_VERSION = 1;
         const STORE_NAME = "student_exam_images";
         let dbInstance = null;
 
         function initIndexedDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onupgradeneeded = (e) => {
+            return new Promise((resolve) => {
+                const req = indexedDB.open(DB_NAME, 1);
+                req.onupgradeneeded = (e) => {
                     const db = e.target.result;
                     if (!db.objectStoreNames.contains(STORE_NAME)) {
                         db.createObjectStore(STORE_NAME, { keyPath: "id" });
                     }
                 };
-                request.onsuccess = (e) => {
-                    dbInstance = e.target.result;
-                    resolve(dbInstance);
-                };
-                request.onerror = (e) => reject(e);
+                req.onsuccess = (e) => { dbInstance = e.target.result; resolve(dbInstance); };
+                req.onerror = () => resolve(null);
             });
         }
 
-        function saveImageInternal(studentId, base64ImageData) {
-            return new Promise((resolve, reject) => {
-                if (!dbInstance) {
-                    resolve(null);
-                    return;
-                }
+        function saveImageInternal(studentId, base64Data) {
+            return new Promise((resolve) => {
+                if (!dbInstance) return resolve(false);
                 const tx = dbInstance.transaction(STORE_NAME, "readwrite");
-                const store = tx.objectStore(STORE_NAME);
-                store.put({ id: studentId, image: base64ImageData });
+                tx.objectStore(STORE_NAME).put({ id: studentId, image: base64Data });
                 tx.oncomplete = () => resolve(true);
-                tx.onerror = () => reject(false);
+                tx.onerror = () => resolve(false);
             });
         }
 
         function getImageInternal(studentId) {
             return new Promise((resolve) => {
-                if (!dbInstance) {
-                    resolve(null);
-                    return;
-                }
+                if (!dbInstance) return resolve(null);
                 const tx = dbInstance.transaction(STORE_NAME, "readonly");
-                const store = tx.objectStore(STORE_NAME);
-                const query = store.get(studentId);
-                query.onsuccess = () => resolve(query.result ? query.result.image : null);
-                query.onerror = () => resolve(null);
+                const q = tx.objectStore(STORE_NAME).get(studentId);
+                q.onsuccess = () => resolve(q.result ? q.result.image : null);
+                q.onerror = () => resolve(null);
             });
         }
 
         // =========================================================
-        // CẤU TRÚC DỮ LIỆU ĐỢT THI
+        // DỮ LIỆU ĐỢT THI
         // =========================================================
         let examBatches = JSON.parse(localStorage.getItem('qm_exam_batches')) || [
             {
                 id: "CK2_11",
                 name: "CK2 11",
                 date: "2026-04-20 08:26:55",
-                sheetType: "Phiếu: QM 2025 - Sử, Tin, Công Nghệ, GDPL",
+                sheetType: "Phiếu: QM 2025 - Sử, Tin, CN, GDPL",
                 structure: "Số câu: 12; 4; 0",
                 keys: {
-                    "001": {"part1": ["C","A","B","B","A","A","B","C","A","A","D","B"], "part2": ["SĐĐĐ","ĐSĐS","SĐSĐ","SĐĐĐ"]},
-                    "002": {"part1": ["A","A","D","C","D","D","C","A","D","A","B","B"], "part2": ["ĐSĐĐ","SĐĐĐ","SSĐĐ","ĐĐSS"]},
-                    "003": {"part1": ["A","A","B","C","A","C","C","A","C","B","C","A"], "part2": ["SĐĐĐ","SĐSĐ","SĐĐĐ","ĐSSĐ"]},
-                    "004": {"part1": ["C","A","B","D","C","D","B","A","C","A","B","D"], "part2": ["ĐSĐĐ","ĐĐSS","ĐĐĐS","SĐĐS"]}
+                    "0001": {"part1": ["C","A","B","B","A","A","B","C","A","A","D","B"], "part2": ["SĐĐĐ","ĐSĐS","SĐSĐ","SĐĐĐ"]},
+                    "0002": {"part1": ["A","A","D","C","D","D","C","A","D","A","B","B"], "part2": ["ĐSĐĐ","SĐĐĐ","SSĐĐ","ĐĐSS"]},
+                    "0003": {"part1": ["A","A","B","C","A","C","C","A","C","B","C","A"], "part2": ["SĐĐĐ","SĐSĐ","SĐĐĐ","ĐSSĐ"]},
+                    "0004": {"part1": ["C","A","B","D","C","D","B","A","C","A","B","D"], "part2": ["ĐSĐĐ","ĐĐSS","ĐĐĐS","SĐĐS"]}
                 },
                 students: [
-                    { id: "STU_1", name: "Phan Minh Hoàng", sbd: "01001", code: "002", p1Score: 2.75, p2Score: 3.5, total: 6.25, choicesP1: ["A","A","D","C","D","D","C","A","D","A","B","B"], choicesP2: ["ĐSĐĐ","SĐĐĐ","SSĐĐ","ĐĐSS"] },
-                    { id: "STU_2", name: "Đặng Phúc Minh Căn", sbd: "01002", code: "001", p1Score: 2.5, p2Score: 2.5, total: 5.00, choicesP1: ["C","A","B","B","A","B","B","C","A","A","B","B"], choicesP2: ["SĐĐĐ","ĐSĐĐ","SĐSĐ","SĐĐS"] },
-                    { id: "STU_3", name: "Phạm Thị Thúy Nga", sbd: "01003", code: "001", p1Score: 2.75, p2Score: 3.5, total: 6.25, choicesP1: ["C","A","B","B","A","A","B","C","A","A","D","B"], choicesP2: ["SĐĐĐ","ĐSĐS","SĐSĐ","SĐĐĐ"] }
+                    { id: "STU_1", name: "Phan Minh Hoàng", sbd: "01001", code: "0002", p1Score: 2.75, p2Score: 3.5, total: 6.25, choicesP1: ["A","A","D","C","D","D","C","A","D","A","B","B"], choicesP2: ["ĐSĐĐ","SĐĐĐ","SSĐĐ","ĐĐSS"] },
+                    { id: "STU_2", name: "Đặng Phúc Minh Căn", sbd: "01002", code: "0001", p1Score: 2.5, p2Score: 2.5, total: 5.00, choicesP1: ["C","A","B","B","A","B","B","C","A","A","B","B"], choicesP2: ["SĐĐĐ","ĐSĐĐ","SĐSĐ","SĐĐS"] }
                 ]
             }
         ];
@@ -302,11 +301,15 @@
             examBatches.forEach(batch => {
                 const card = document.createElement('div');
                 card.className = "exam-card";
-                card.onclick = () => openExamDetail(batch.id);
+                card.onclick = () => {
+                    currentBatch = batch;
+                    document.getElementById('detail-title').innerText = currentBatch.name;
+                    document.getElementById('graded-header-title').innerText = currentBatch.name;
+                    navigateTo('view-exam-detail');
+                };
                 card.innerHTML = `
                     <h3>${batch.name}</h3>
                     <div class="exam-meta">${batch.date}</div>
-                    <div class="exam-meta">Quét số Báo Danh</div>
                     <div class="exam-meta">${batch.sheetType}</div>
                     <div class="exam-meta">${batch.structure}</div>
                 `;
@@ -314,55 +317,22 @@
             });
         }
 
-        function createNewExamBatch() {
-            const name = prompt("Nhập tên đợt thi mới:");
-            if (!name) return;
-            const now = new Date();
-            const dateStr = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,'0') + "-" + String(now.getDate()).padStart(2,'0') + " " + String(now.getHours()).padStart(2,'0') + ":" + String(now.getMinutes()).padStart(2,'0');
-
-            const newBatch = {
-                id: "BATCH_" + Date.now(),
-                name: name,
-                date: dateStr,
-                sheetType: "Phiếu: QM 2025 - Sử, Tin, Công Nghệ, GDPL",
-                structure: "Số câu: 12; 4; 0",
-                keys: currentBatch.keys,
-                students: []
-            };
-            examBatches.unshift(newBatch);
-            saveStorage();
-            renderExamBatchCards();
-        }
-
-        function openExamDetail(batchId) {
-            currentBatch = examBatches.find(b => b.id === batchId);
-            document.getElementById('detail-title').innerText = currentBatch.name;
-            document.getElementById('graded-header-title').innerText = currentBatch.name;
-            navigateTo('view-exam-detail');
-        }
-
         async function renderGradedStudents() {
             const container = document.getElementById('graded-students-container');
             container.innerHTML = "";
-
             if (!currentBatch.students || currentBatch.students.length === 0) {
-                container.innerHTML = "<div style='text-align:center; padding:30px; color:#888;'>Chưa có bài thi nào được chấm trong đợt này.</div>";
+                container.innerHTML = "<div style='text-align:center; padding:30px; color:#888;'>Chưa có bài thi nào được chấm.</div>";
                 return;
             }
-
             for (const st of currentBatch.students) {
                 const storedImg = await getImageInternal(st.id);
                 const item = document.createElement('div');
                 item.className = "graded-item";
-                
                 const nameDisplay = storedImg 
                     ? `<img src="${storedImg}" alt="Vùng chữ viết tay">` 
                     : `<span style="font-family: cursive; font-size: 15px; color: #b71c1c; font-weight: bold;">${st.name}</span>`;
-
                 item.innerHTML = `
-                    <div class="name-box">
-                        ${nameDisplay}
-                    </div>
+                    <div class="name-box">${nameDisplay}</div>
                     <div class="score-info">
                         <div style="font-size: 12px; color: #555;">SBD: ${st.sbd}</div>
                         <div style="font-size: 12px; color: #555;">Mã đề: <b>${st.code}</b></div>
@@ -374,20 +344,49 @@
         }
 
         // =========================================================
-        // CAMERA CHẤM VÀ LƯU ẢNH TRỰC TIẾP VÀO INDEXEDDB
+        // ĐIỀU KHIỂN CAMERA & TỰ ĐỘNG XOAY MÀN HÌNH
         // =========================================================
+        async function triggerRotateScreen() {
+            try {
+                if (screen.orientation && screen.orientation.lock) {
+                    await screen.orientation.lock('landscape');
+                }
+            } catch (e) {
+                alert("Vui lòng bật tính năng Tự động xoay màn hình (Auto-rotate) trên điện thoại và cầm ngang máy.");
+            }
+        }
+
         async function startCameraOMR() {
             const wrapper = document.getElementById('camera-wrapper');
             const video = document.getElementById('video-feed');
+            wrapper.style.display = 'flex';
+
+            triggerRotateScreen();
+
+            const constraints = {
+                audio: false,
+                video: {
+                    facingMode: { ideal: "environment" },
+                    width: { ideal: 1920, min: 1280 },
+                    height: { ideal: 1080, min: 720 }
+                }
+            };
+
             try {
-                cameraStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-                    audio: false
-                });
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = cameraStream;
-                wrapper.style.display = 'flex';
+                video.setAttribute("playsinline", true);
+                video.setAttribute("autoplay", true);
+                video.setAttribute("muted", true);
+
+                video.onloadedmetadata = () => {
+                    video.play().catch(e => console.error("Lỗi phát video:", e));
+                };
             } catch (err) {
-                alert("Không thể kết nối Camera: " + err);
+                console.error("Camera trực tiếp lỗi:", err);
+                alert("Không thể khởi động camera trực tiếp. Ứng dụng sẽ chuyển sang chế độ tải tệp/chụp ảnh hệ thống.");
+                stopCameraOMR();
+                document.getElementById('file-upload-input').click();
             }
         }
 
@@ -397,6 +396,9 @@
                 cameraStream = null;
             }
             document.getElementById('camera-wrapper').style.display = 'none';
+            if (screen.orientation && screen.orientation.unlock) {
+                try { screen.orientation.unlock(); } catch (e) {}
+            }
         }
 
         function calcPart2Score(correctCount) {
@@ -407,36 +409,55 @@
             return 0.0;
         }
 
-        async function captureAndGradeLive() {
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.getElementById('proc-canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    processGradingFromCanvas(canvas);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function captureAndGradeLive() {
             const video = document.getElementById('video-feed');
             const canvas = document.getElementById('proc-canvas');
-            const ctx = canvas.getContext('2d');
-
             canvas.width = video.videoWidth || 1280;
             canvas.height = video.videoHeight || 720;
+            const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             stopCameraOMR();
+            processGradingFromCanvas(canvas);
+        }
 
-            // Cắt riêng vùng Họ và Tên của học sinh trên phiếu
+        async function processGradingFromCanvas(canvas) {
+            // Cắt vùng Họ Tên để lưu ngầm vào IndexedDB
             const cropCanvas = document.createElement('canvas');
             const cropCtx = cropCanvas.getContext('2d');
             const nameWidth = Math.floor(canvas.width * 0.45);
             const nameHeight = Math.floor(canvas.height * 0.12);
             cropCanvas.width = nameWidth;
             cropCanvas.height = nameHeight;
-            cropCtx.drawImage(canvas, Math.floor(canvas.width * 0.1), Math.floor(canvas.height * 0.15), nameWidth, nameHeight, 0, 0, nameWidth, nameHeight);
+            cropCtx.drawImage(canvas, Math.floor(canvas.width * 0.1), Math.floor(canvas.height * 0.14), nameWidth, nameHeight, 0, 0, nameWidth, nameHeight);
             
-            // Chuỗi dữ liệu ảnh nội bộ (Không bao giờ ghi vào thư viện điện thoại)
             const internalImageData = cropCanvas.toDataURL('image/jpeg', 0.85);
-
             const studentId = "STU_" + Date.now();
             await saveImageInternal(studentId, internalImageData);
 
-            const availableCodes = ["001", "002", "003", "004"];
+            const availableCodes = Object.keys(currentBatch.keys);
             const detectedCode = availableCodes[Math.floor(Math.random() * availableCodes.length)];
             const keyObj = currentBatch.keys[detectedCode];
 
-            // Chấm Phần I
+            // Chấm Phần I (12 câu)
             let p1Correct = 0;
             let stuChoicesP1 = [];
             keyObj.part1.forEach(ans => {
@@ -446,7 +467,7 @@
             });
             const p1Score = p1Correct * 0.25;
 
-            // Chấm Phần II
+            // Chấm Phần II (4 câu Đúng/Sai)
             let p2Score = 0;
             let stuChoicesP2 = [];
             keyObj.part2.forEach(pattern => {
@@ -479,12 +500,12 @@
             });
             saveStorage();
 
-            alert(`✓ Đã chấm xong!\nHọc sinh: ${detectedName}\nMã đề: ${detectedCode} | SBD: ${randomSBD}\nĐiểm: ${totalScore}/7.0 điểm`);
+            alert(`✓ Đã chấm xong!\nMã đề: ${detectedCode} | SBD: ${randomSBD}\nĐiểm: ${totalScore}/7.0 điểm`);
             navigateTo('view-graded-list');
         }
 
         // =========================================================
-        // XUẤT KẾT QUẢ VÀ NẠP ĐÁP ÁN
+        // XUẤT FILE EXCEL & QUÉT MÃ QR
         // =========================================================
         function openExportModal() { document.getElementById('export-modal').style.display = 'flex'; }
         function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
@@ -495,20 +516,14 @@
                 alert("Chưa có dữ liệu bài chấm!");
                 return;
             }
-
             let exportData = [];
             let fileName = "";
 
             if (type === 'DIEM') {
                 fileName = `Ket_Qua_Diem_${currentBatch.name}.xlsx`;
                 exportData = currentBatch.students.map((st, idx) => ({
-                    "STT": idx + 1,
-                    "Họ và Tên": st.name,
-                    "Số Báo Danh": st.sbd,
-                    "Mã Đề": st.code,
-                    "Điểm Phần I": st.p1Score,
-                    "Điểm Phần II": st.p2Score,
-                    "Tổng Điểm": st.total
+                    "STT": idx + 1, "Họ và Tên": st.name, "Số Báo Danh": st.sbd,
+                    "Mã Đề": st.code, "Điểm Phần I": st.p1Score, "Điểm Phần II": st.p2Score, "Tổng Điểm": st.total
                 }));
             } else if (type === 'LUA_CHON') {
                 fileName = `Ket_Qua_Lua_Chon_${currentBatch.name}.xlsx`;
@@ -545,7 +560,7 @@
                         closeKeySyncDialog();
                     }
                 } catch(e) {}
-            }).catch(err => console.log(err));
+            }).catch(err => console.error(err));
         }
 
         function closeKeySyncDialog() {
