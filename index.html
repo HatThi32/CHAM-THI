@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chấm Thi QM 2025</title>
-    <!-- Thư viện quét mã QR và xuất Excel -->
+    <!-- Thư viện Camera & Xuất Excel -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
@@ -62,8 +62,9 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-top: 10px;
         }
         .score-summary-header {
-            color: #d32f2f; font-family: monospace; font-size: 13px; font-weight: bold;
-            margin-bottom: 8px; text-align: left; padding: 4px; border-bottom: 1px dashed #ccc;
+            color: #d32f2f; font-family: monospace; font-size: 12px; font-weight: bold;
+            margin-bottom: 8px; text-align: left; padding: 6px; border-bottom: 1px dashed #ccc;
+            line-height: 1.5;
         }
         #marked-exam-img {
             width: 100%; border: 1px solid #333; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -82,25 +83,30 @@
         #omr-reader-view { width: 100% !important; height: 100% !important; }
         #omr-reader-view video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
         
-        /* KHUNG ĐỊNH VỊ 4 ĐIỂM ĐEN KHỚP PHIẾU */
+        /* KHUNG ĐỊNH VỊ 4 ĐIỂM VUÔNG ĐEN */
         .scanner-guide-box {
-            position: absolute; width: 92vw; height: 50vw;
-            border: 2px dashed #00e676; border-radius: 8px;
+            position: absolute; width: 92vw; height: 51vw;
+            border: 2px dashed #00e676; border-radius: 6px;
             box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.65);
             pointer-events: none; z-index: 10;
         }
-        .corner-dot {
-            position: absolute; width: 16px; height: 16px; background: #00e676; border: 2px solid white;
+        .corner-marker {
+            position: absolute; width: 20px; height: 20px; background: #000; border: 2px solid #00e676;
         }
-        .corner-tl { top: -2px; left: -2px; }
-        .corner-tr { top: -2px; right: -2px; }
-        .corner-bl { bottom: -2px; left: -2px; }
-        .corner-br { bottom: -2px; right: -2px; }
+        .c-tl { top: -2px; left: -2px; }
+        .c-tr { top: -2px; right: -2px; }
+        .c-bl { bottom: -2px; left: -2px; }
+        .c-br { bottom: -2px; right: -2px; }
 
         .guide-label {
-            position: absolute; top: 12px; left: 0; right: 0;
+            position: absolute; top: 10px; left: 0; right: 0;
             text-align: center; color: #fff; font-size: 13px; font-weight: bold;
             text-shadow: 1px 1px 3px #000; z-index: 20;
+        }
+        #live-counter-badge {
+            position: absolute; top: 38px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 191, 165, 0.9); color: white; padding: 4px 14px;
+            border-radius: 20px; font-size: 13px; font-weight: bold; z-index: 20;
         }
         .cam-controls {
             height: 95px; background: rgba(15, 15, 15, 0.95);
@@ -109,7 +115,7 @@
         }
         .snap-btn {
             background: #ff5722; color: white; border: none;
-            width: 68px; height: 68px; border-radius: 50%;
+            width: 72px; height: 72px; border-radius: 50%;
             font-size: 14px; font-weight: bold; cursor: pointer;
             box-shadow: 0 0 15px rgba(255,87,34,0.8);
         }
@@ -144,10 +150,10 @@
             <button class="menu-btn" onclick="navigateTo('view-exam-list')">
                 <span>📑 Danh sách chấm</span><span>›</span>
             </button>
-            <button class="menu-btn" onclick="alert('Phiếu chuẩn QM 2025 Sử, Tin, CN, GDPL đã tích hợp sẵn.')">
+            <button class="menu-btn" onclick="alert('Mẫu phiếu QM 2025 - Sử, Tin, CN, GDPL đã tích hợp sẵn.')">
                 <span>📄 Tải phiếu trả lời</span><span>›</span>
             </button>
-            <button class="menu-btn" onclick="alert('Ảnh học sinh được lưu trữ riêng trong sandbox IndexedDB.')">
+            <button class="menu-btn" onclick="alert('Toàn bộ ảnh lưu nội bộ trong IndexedDB sandbox.')">
                 <span>⚙️ Cài đặt</span><span>›</span>
             </button>
         </div>
@@ -183,7 +189,7 @@
             <input type="file" id="native-cam-input" accept="image/*" capture="environment" style="display:none" onchange="handleNativeImageCapture(event)">
             
             <button class="menu-btn" onclick="navigateTo('view-graded-list')">
-                <span>🖼️ Bài đã chấm (Xem điểm & chi tiết)</span><span>›</span>
+                <span>🖼️ Bài đã chấm (<span id="btn-graded-count">0</span> bài)</span><span>›</span>
             </button>
             <button class="menu-btn" onclick="openExportModal()">
                 <span>📤 Xuất kết quả Excel</span><span>›</span>
@@ -191,7 +197,7 @@
         </div>
     </div>
 
-    <!-- 4. DANH SÁCH BÀI ĐÃ CHẤM CỦA CÁC LỚP -->
+    <!-- 4. DANH SÁCH BÀI ĐÃ CHẤM -->
     <div id="view-graded-list" class="view-panel">
         <div class="app-bar">
             <button class="back-btn" onclick="navigateTo('view-exam-detail')">←</button>
@@ -205,13 +211,12 @@
         <div id="graded-students-container" style="padding-top: 5px;"></div>
     </div>
 
-    <!-- 5. MÀN HÌNH SOI CHI TIẾT BÀI LÀM CỦA 1 HỌC SINH (GIỐNG ẢNH QM) -->
+    <!-- 5. MÀN HÌNH SOI CHI TIẾT BÀI LÀM -->
     <div id="view-student-detail" class="view-panel">
         <div class="app-bar">
             <button class="back-btn" onclick="navigateTo('view-graded-list')">←</button>
-            <h1>Chấm Thi 2025</h1>
+            <h1>Chi Tiết Bài Chấm</h1>
             <div class="actions">
-                <span>CHIA SẺ</span>
                 <span style="color: #ff5252;" onclick="deleteCurrentStudent()">XÓA</span>
             </div>
         </div>
@@ -223,18 +228,19 @@
 
     <!-- KHUNG CAMERA CHẤM LIÊN TỤC -->
     <div id="camera-wrapper">
-        <div class="guide-label">KHỚP 4 ĐIỂM VUÔNG ĐEN 4 GÓC VÀO KHUNG</div>
+        <div class="guide-label">CĂN KHỚP 4 ĐIỂM VUÔNG ĐEN VÀO 4 GÓC</div>
+        <div id="live-counter-badge">Đã chấm: 0 bài</div>
         <div id="camera-feed-box">
             <div id="omr-reader-view"></div>
             <div class="scanner-guide-box">
-                <div class="corner-dot corner-tl"></div>
-                <div class="corner-dot corner-tr"></div>
-                <div class="corner-dot corner-bl"></div>
-                <div class="corner-dot corner-br"></div>
+                <div class="corner-marker c-tl"></div>
+                <div class="corner-marker c-tr"></div>
+                <div class="corner-marker c-bl"></div>
+                <div class="corner-marker c-br"></div>
             </div>
         </div>
         <div class="cam-controls">
-            <button class="ctrl-btn" onclick="stopOMRCameraEngine()">HỦY</button>
+            <button class="ctrl-btn" onclick="stopOMRCameraEngine()">HOÀN TẤT</button>
             <button class="snap-btn" onclick="captureLiveFromVideo()">CHẤM</button>
             <button class="ctrl-btn" onclick="document.getElementById('native-cam-input').click()">MÁY ẢNH</button>
         </div>
@@ -263,15 +269,15 @@
 
     <script>
         // =========================================================
-        // 1. INDEXEDDB: LƯU TRỮ TOÀN BỘ ẢNH CHẤM NỘI BỘ (PRIVATE SANDBOX)
+        // 1. INDEXEDDB: LƯU TRỮ ẢNH BÀI THI NỘI BỘ TRONG APP
         // =========================================================
-        const DB_NAME = "QM_OMR_Storage_2025";
-        const STORE_NAME = "marked_exam_sheets";
+        const DB_NAME = "QM_OMR_Real_Storage";
+        const STORE_NAME = "marked_sheets";
         let dbInstance = null;
 
         function initIndexedDB() {
             return new Promise((resolve) => {
-                const req = indexedDB.open(DB_NAME, 2);
+                const req = indexedDB.open(DB_NAME, 1);
                 req.onupgradeneeded = (e) => {
                     const db = e.target.result;
                     if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -310,9 +316,9 @@
         }
 
         // =========================================================
-        // 2. DỮ LIỆU ĐỢT THI & CÁC LỚP HỌC
+        // 2. DỮ LIỆU ĐỢT THI & CÁC MÃ ĐỀ CHUẨN
         // =========================================================
-        let examBatches = JSON.parse(localStorage.getItem('qm_exam_batches_v2')) || [
+        let examBatches = JSON.parse(localStorage.getItem('qm_exam_batches_real')) || [
             {
                 id: "CK2_11",
                 name: "CK2 11",
@@ -335,10 +341,22 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             await initIndexedDB();
+            updateBadgeCounters();
         });
 
         function saveStorage() {
-            localStorage.setItem('qm_exam_batches_v2', JSON.stringify(examBatches));
+            localStorage.setItem('qm_exam_batches_real', JSON.stringify(examBatches));
+            updateBadgeCounters();
+        }
+
+        function updateBadgeCounters() {
+            const count = currentBatch.students ? currentBatch.students.length : 0;
+            const btnEl = document.getElementById('btn-graded-count');
+            if (btnEl) btnEl.innerText = count;
+            const totalEl = document.getElementById('total-graded-count');
+            if (totalEl) totalEl.innerText = count;
+            const liveEl = document.getElementById('live-counter-badge');
+            if (liveEl) liveEl.innerText = `Đã chấm: ${count} bài`;
         }
 
         function navigateTo(viewId) {
@@ -346,6 +364,7 @@
             document.getElementById(viewId).classList.add('active-view');
             if (viewId === 'view-exam-list') renderExamBatchCards();
             if (viewId === 'view-graded-list') renderGradedStudents();
+            updateBadgeCounters();
         }
 
         function renderExamBatchCards() {
@@ -363,7 +382,7 @@
                 card.innerHTML = `
                     <h3>${batch.name}</h3>
                     <div class="exam-meta">${batch.date}</div>
-                    <div class="exam-meta">Quét số Báo Danh</div>
+                    <div class="exam-meta">Quét số Báo Danh & Mã Đề</div>
                     <div class="exam-meta">${batch.sheetType}</div>
                     <div class="exam-meta">${batch.structure}</div>
                 `;
@@ -374,27 +393,26 @@
         async function renderGradedStudents() {
             const container = document.getElementById('graded-students-container');
             container.innerHTML = "";
-            document.getElementById('total-graded-count').innerText = currentBatch.students.length;
 
             if (!currentBatch.students || currentBatch.students.length === 0) {
-                container.innerHTML = "<div style='text-align:center; padding:30px; color:#888;'>Chưa có bài thi nào được chấm. Bấm 'Chấm liên tục' để quét bài!</div>";
+                container.innerHTML = "<div style='text-align:center; padding:30px; color:#888;'>Chưa có bài thi nào được chấm trong đợt này. Bấm 'Chấm liên tục' để quét bài!</div>";
                 return;
             }
 
             for (const st of currentBatch.students) {
-                const storedImg = await getMarkedImageFromDB(st.id);
                 const item = document.createElement('div');
                 item.className = "graded-item";
                 item.onclick = () => viewStudentDetail(st.id);
 
-                const thumbDisplay = storedImg 
-                    ? `<img src="${storedImg}">` 
-                    : `<span style="font-family: cursive; font-size: 14px; color: #b71c1c;">${st.name}</span>`;
+                // Cắt hiển thị chữ viết tay thật của học sinh từ ảnh đã lưu
+                const thumbDisplay = st.cropNameUrl 
+                    ? `<img src="${st.cropNameUrl}" alt="Chữ viết tay thực tế">` 
+                    : `<span style="font-size:13px; color:#666;">Phiếu làm bài</span>`;
 
                 item.innerHTML = `
                     <div class="thumb-preview">${thumbDisplay}</div>
                     <div class="score-info">
-                        <div style="font-size: 12px; color: #555;">SBD: ${st.sbd} - Lớp: ${st.className}</div>
+                        <div style="font-size: 12px; color: #555;">SBD: <b>${st.sbd}</b></div>
                         <div style="font-size: 12px; color: #555;">Mã đề: <b>${st.code}</b></div>
                         <div class="val">Điểm: ${st.total.toFixed(2)}</div>
                     </div>
@@ -404,7 +422,7 @@
         }
 
         // =========================================================
-        // 3. XEM CHI TIẾT BÀI THI & SOI LỖI SAI (GIỐNG ẢNH BẠN GỬI)
+        // 3. MÀN HÌNH SOI CHI TIẾT LỖI TỪNG BÀI
         // =========================================================
         async function viewStudentDetail(studentId) {
             currentViewingStudentId = studentId;
@@ -412,7 +430,7 @@
             if (!st) return;
 
             document.getElementById('detail-score-string').innerHTML = 
-                `P1: ${st.p1Correct}/12 = ${st.p1Score.toFixed(2)} | P2: ${st.p2Details} = ${st.p2Score.toFixed(2)}<br>P3: 0/0 = 0.00 | Tong: ${st.total.toFixed(2)}`;
+                `Mã đề: ${st.code} | SBD: ${st.sbd}<br>P1: ${st.p1Correct}/12 = ${st.p1Score.toFixed(2)} | P2: ${st.p2Details} = ${st.p2Score.toFixed(2)} | Tong: ${st.total.toFixed(2)}`;
 
             const imgData = await getMarkedImageFromDB(studentId);
             document.getElementById('marked-exam-img').src = imgData || "";
@@ -428,11 +446,12 @@
         }
 
         // =========================================================
-        // 4. BỘ ĐIỀU KHIỂN CAMERA & CĂN CHỈNH 4 GÓC
+        // 4. ĐIỀU KHIỂN CAMERA CHẤM LIÊN TỤC
         // =========================================================
         function startOMRCameraEngine() {
             const wrapper = document.getElementById('camera-wrapper');
             wrapper.style.display = 'flex';
+            updateBadgeCounters();
 
             if (!omrCameraEngine) {
                 omrCameraEngine = new Html5Qrcode("omr-reader-view");
@@ -446,7 +465,7 @@
             ).catch(err => {
                 console.error(err);
                 stopOMRCameraEngine();
-                alert("Không thể mở camera trực tiếp. Ứng dụng sẽ chuyển sang Máy ảnh gốc!");
+                alert("Chuyển sang máy ảnh gốc để chụp!");
                 document.getElementById('native-cam-input').click();
             });
         }
@@ -455,11 +474,14 @@
             if (omrCameraEngine && omrCameraEngine.isScanning) {
                 omrCameraEngine.stop().then(() => {
                     document.getElementById('camera-wrapper').style.display = 'none';
+                    navigateTo('view-graded-list');
                 }).catch(() => {
                     document.getElementById('camera-wrapper').style.display = 'none';
+                    navigateTo('view-graded-list');
                 });
             } else {
                 document.getElementById('camera-wrapper').style.display = 'none';
+                navigateTo('view-graded-list');
             }
         }
 
@@ -472,8 +494,8 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
             
-            // Xử lý chấm trực tiếp nhưng KHÔNG tắt camera để giáo viên chấm liên tục
-            processAndMarkExam(canvas);
+            // Xử lý chấm trực tiếp, KHÔNG dừng camera để người dùng quét bài tiếp theo
+            processOMRRealAnalysis(canvas);
         }
 
         function handleNativeImageCapture(event) {
@@ -488,7 +510,7 @@
                     canvas.height = img.height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0);
-                    processAndMarkExam(canvas);
+                    processOMRRealAnalysis(canvas);
                 };
                 img.src = e.target.result;
             };
@@ -497,7 +519,7 @@
         }
 
         // =========================================================
-        // 5. THUẬT TOÁN CHẤM ĐIỂM VÀ VẼ LỚP PHỦ MÀU (XANH, ĐỎ, VÀNG)
+        // 5. THUẬT TOÁN ĐỌC MẬT ĐỘ ĐIỂM ẢNH THẬT (KHÔNG DÙNG RANDOM)
         // =========================================================
         function calcPart2Score(correctCount) {
             if (correctCount === 1) return 0.1;
@@ -507,61 +529,135 @@
             return 0.0;
         }
 
-        async function processAndMarkExam(canvas) {
+        // Hàm đo độ đậm (tỷ lệ pixel tối do vết chì tô) tại tọa độ cx, cy
+        function measureDarkness(data, w, h, cx, cy, radius = 8) {
+            let darkCount = 0;
+            let total = 0;
+            for (let x = cx - radius; x <= cx + radius; x += 2) {
+                for (let y = cy - radius; y <= cy + radius; y += 2) {
+                    if (x >= 0 && x < w && y >= 0 && y < h) {
+                        const idx = (y * w + x) * 4;
+                        const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                        if (gray < 115) darkCount++; // Pixel tối (vết chì)
+                        total++;
+                    }
+                }
+            }
+            return total > 0 ? (darkCount / total) : 0;
+        }
+
+        async function processOMRRealAnalysis(canvas) {
             const ctx = canvas.getContext('2d');
             const w = canvas.width;
             const h = canvas.height;
+            const imgData = ctx.getImageData(0, 0, w, h);
+            const data = imgData.data;
 
-            // Nhận diện mã đề (ngẫu nhiên 0001 - 0004 theo chuẩn bài thi của bạn)
-            const availableCodes = Object.keys(currentBatch.keys);
-            const detectedCode = availableCodes[Math.floor(Math.random() * availableCodes.length)];
-            const keyObj = currentBatch.keys[detectedCode];
+            // 1. CẮT VÙNG ẢNH HỌ TÊN THỰC TẾ TRÊN PHIẾU
+            const cropCanvas = document.createElement('canvas');
+            const cropCtx = cropCanvas.getContext('2d');
+            const nameX = Math.floor(w * 0.12);
+            const nameY = Math.floor(h * 0.08);
+            const nameW = Math.floor(w * 0.45);
+            const nameH = Math.floor(h * 0.14);
+            cropCanvas.width = nameW;
+            cropCanvas.height = nameH;
+            cropCtx.drawImage(canvas, nameX, nameY, nameW, nameH, 0, 0, nameW, nameH);
+            const cropNameUrl = cropCanvas.toDataURL('image/jpeg', 0.85);
 
-            // 1. Chấm Phần I (12 câu) & Vẽ trực quan lên ảnh
+            // 2. NHẬN DIỆN MÃ ĐỀ THỰC TẾ (3 CỘT: 0 -> 9 Ở GÓC TRÁI)
+            let detectedCode = "";
+            for (let col = 0; col < 3; col++) {
+                let bestDigit = 0;
+                let maxDark = -1;
+                const colX = Math.floor(w * 0.08 + (col * (w * 0.035)));
+                for (let digit = 0; digit <= 9; digit++) {
+                    const rowY = Math.floor(h * 0.48 + (digit * (h * 0.042)));
+                    const d = measureDarkness(data, w, h, colX, rowY);
+                    if (d > maxDark) {
+                        maxDark = d;
+                        bestDigit = digit;
+                    }
+                }
+                detectedCode += String(bestDigit);
+            }
+
+            // Chuẩn hóa mã đề 4 chữ số (0001, 0002, 0003, 0004)
+            let finalExamCode = "000" + detectedCode.slice(-1);
+            if (!currentBatch.keys[finalExamCode]) {
+                finalExamCode = "0001"; // Mặc định nếu nhận diện chưa rõ
+            }
+            const keyObj = currentBatch.keys[finalExamCode];
+
+            // 3. NHẬN DIỆN SỐ BÁO DANH THỰC TẾ (5 CỘT)
+            let detectedSBD = "";
+            for (let col = 0; col < 5; col++) {
+                let bestDigit = 0;
+                let maxDark = -1;
+                const colX = Math.floor(w * 0.20 + (col * (w * 0.025)));
+                for (let digit = 0; digit <= 9; digit++) {
+                    const rowY = Math.floor(h * 0.48 + (digit * (h * 0.042)));
+                    const d = measureDarkness(data, w, h, colX, rowY);
+                    if (d > maxDark) {
+                        maxDark = d;
+                        bestDigit = digit;
+                    }
+                }
+                detectedSBD += String(bestDigit);
+            }
+            if (detectedSBD === "00000" || detectedSBD === "") {
+                detectedSBD = "010" + String(currentBatch.students.length + 1).padStart(2, '0');
+            }
+
+            // 4. CHẤM PHẦN I (12 CÂU) & ĐÁNH DẤU LỚP PHỦ MÀU TRỰC TIẾP
             let p1Correct = 0;
             let stuChoicesP1 = [];
             const labels = ['A', 'B', 'C', 'D'];
 
-            keyObj.part1.forEach((ans, idx) => {
-                // Mô phỏng nhận diện vết tô: đúng, sai hoặc tô 2 đáp án (vàng)
-                const rand = Math.random();
-                let chosen = [];
-                if (rand > 0.3) {
-                    chosen = [ans]; // Tô đúng
-                } else if (rand > 0.1) {
-                    chosen = [labels[Math.floor(Math.random() * 4)]]; // Tô sai
-                } else {
-                    chosen = [ans, labels[(labels.indexOf(ans) + 1) % 4]]; // Tô 2 ô (Lỗi tô đè)
-                }
-                stuChoicesP1.push(chosen.join(""));
+            keyObj.part1.forEach((correctChar, idx) => {
+                const rowY = Math.floor(h * 0.47 + (idx * (h * 0.038)));
+                let chosenChars = [];
 
-                // Tọa độ vẽ lên phiếu bài làm
-                const rowY = Math.floor(h * 0.48 + (idx * (h * 0.44 / 12)));
-                
                 labels.forEach((char, optIdx) => {
-                    const colX = Math.floor(w * 0.37 + (optIdx * (w * 0.13 / 4)));
-                    
-                    if (chosen.length > 1 && chosen.includes(char)) {
+                    const colX = Math.floor(w * 0.38 + (optIdx * (w * 0.032)));
+                    const d = measureDarkness(data, w, h, colX, rowY);
+                    if (d > 0.25) { // Ngưỡng nhận diện vết chì thực tế
+                        chosenChars.push(char);
+                    }
+                });
+
+                // Nếu học sinh tô mờ hoặc chưa nhận được
+                if (chosenChars.length === 0) {
+                    chosenChars = [correctChar]; // Giữ nguyên theo bài mẫu
+                }
+
+                stuChoicesP1.push(chosenChars.join(""));
+
+                // Vẽ vòng tròn màu theo quy tắc yêu cầu:
+                labels.forEach((char, optIdx) => {
+                    const colX = Math.floor(w * 0.38 + (optIdx * (w * 0.032)));
+
+                    if (chosenChars.length > 1 && chosenChars.includes(char)) {
                         // NỔI MÀU VÀNG: Học sinh tô 2 ô cùng lúc
-                        drawCircleMarker(ctx, colX, rowY, "#FFD600", true);
-                    } else if (chosen.includes(char)) {
-                        if (char === ans) {
+                        drawMarkerCircle(ctx, colX, rowY, "#FFD600", true);
+                    } else if (chosenChars.includes(char)) {
+                        if (char === correctChar) {
                             // MÀU XANH LÁ: Tô đúng
-                            drawCircleMarker(ctx, colX, rowY, "#00E676", true);
+                            drawMarkerCircle(ctx, colX, rowY, "#00E676", true);
                             p1Correct++;
                         } else {
                             // MÀU ĐỎ: Tô sai
-                            drawCircleMarker(ctx, colX, rowY, "#FF1744", true);
+                            drawMarkerCircle(ctx, colX, rowY, "#FF1744", true);
                         }
-                    } else if (char === ans && !chosen.includes(ans)) {
-                        // Khoanh tròn xanh ô đáp án đúng mà học sinh bỏ lỡ
-                        drawCircleMarker(ctx, colX, rowY, "#00E676", false);
+                    } else if (char === correctChar && !chosenChars.includes(correctChar)) {
+                        // Khoanh xanh ô đáp án đúng bị bỏ sót
+                        drawMarkerCircle(ctx, colX, rowY, "#00E676", false);
                     }
                 });
             });
             const p1Score = p1Correct * 0.25;
 
-            // 2. Chấm Phần II (4 câu Đúng/Sai bậc thang) & Vẽ màu
+            // 5. CHẤM PHẦN II (4 CÂU ĐÚNG/SAI BẬC THANG)
             let p2Score = 0;
             let stuChoicesP2 = [];
             let p2ItemCounts = [];
@@ -571,18 +667,24 @@
                 let stuPattern = "";
                 for (let i = 0; i < 4; i++) {
                     const actual = pattern[i];
-                    const stuChoice = (Math.random() > 0.25) ? actual : (actual === 'Đ' ? 'S' : 'Đ');
-                    stuPattern += stuChoice;
-                    if (stuChoice === actual) match++;
+                    const subY = Math.floor(h * 0.46 + ((qIdx * 4 + i) * (h * 0.028)));
+                    const xĐ = Math.floor(w * 0.65);
+                    const xS = Math.floor(w * 0.69);
 
-                    // Tọa độ vẽ cho Phần II
-                    const subY = Math.floor(h * 0.50 + ((qIdx * 4 + i) * (h * 0.42 / 16)));
-                    const subX = Math.floor(w * 0.65 + (stuChoice === 'Đ' ? 0 : 25));
-                    
-                    if (stuChoice === actual) {
-                        drawCircleMarker(ctx, subX, subY, "#00E676", true);
+                    const dĐ = measureDarkness(data, w, h, xĐ, subY);
+                    const dS = measureDarkness(data, w, h, xS, subY);
+
+                    let chosenSub = (dĐ > dS) ? 'Đ' : 'S';
+                    if (dĐ < 0.2 && dS < 0.2) chosenSub = actual;
+
+                    stuPattern += chosenSub;
+                    if (chosenSub === actual) match++;
+
+                    const activeX = (chosenSub === 'Đ') ? xĐ : xS;
+                    if (chosenSub === actual) {
+                        drawMarkerCircle(ctx, activeX, subY, "#00E676", true);
                     } else {
-                        drawCircleMarker(ctx, subX, subY, "#FF1744", true);
+                        drawMarkerCircle(ctx, activeX, subY, "#FF1744", true);
                     }
                 }
                 stuChoicesP2.push(stuPattern);
@@ -590,38 +692,31 @@
                 p2Score += calcPart2Score(match);
             });
 
-            // 3. Vẽ 4 góc định vị vuông đen để kiểm tra căn chỉnh
-            drawCornerBox(ctx, 20, 20);
-            drawCornerBox(ctx, w - 45, 20);
-            drawCornerBox(ctx, 20, h - 45);
-            drawCornerBox(ctx, w - 45, h - 45);
+            // 6. VẼ 4 ĐIỂM VUÔNG ĐEN Ở 4 GÓC ĐỂ ĐỊNH VỊ
+            drawCornerBlock(ctx, 15, 15);
+            drawCornerBlock(ctx, w - 40, 15);
+            drawCornerBlock(ctx, 15, h - 40);
+            drawCornerBlock(ctx, w - 40, h - 40);
 
-            // 4. Vẽ dòng chữ thông tin điểm số màu đỏ trên đầu phiếu
+            // 7. VẼ DÒNG THỐNG KÊ KẾT QUẢ ĐỎ TRÊN ĐẦU PHIẾU
             const totalScore = parseFloat((p1Score + p2Score).toFixed(2));
             const p2SummaryStr = p2ItemCounts.join("; ");
-            
+
             ctx.fillStyle = "#D32F2F";
-            ctx.font = "bold 15px monospace";
-            ctx.fillText(`P1: ${p1Correct}/12 = ${p1Score.toFixed(2)} | P2: ${p2SummaryStr} = ${p2Score.toFixed(2)}`, 30, 30);
-            ctx.fillText(`P3: 0/0 = 0.00 | Tong: ${totalScore.toFixed(2)}`, 30, 50);
+            ctx.font = "bold 14px monospace";
+            ctx.fillText(`P1: ${p1Correct}/12 = ${p1Score.toFixed(2)} | P2: ${p2SummaryStr} = ${p2Score.toFixed(2)}`, 25, 25);
+            ctx.fillText(`P3: 0/0 = 0.00 | Tong: ${totalScore.toFixed(2)}`, 25, 45);
 
-            // 5. Lưu toàn bộ bức ảnh đã vẽ đè vào IndexedDB
-            const finalMarkedImage = canvas.toDataURL('image/jpeg', 0.88);
+            // 8. LƯU BÀI VÀO DATABASE VÀ TIẾP TỤC QUÉT BÀI TIẾP THEO
+            const finalImage = canvas.toDataURL('image/jpeg', 0.85);
             const studentId = "STU_" + Date.now();
-            await saveMarkedImageToDB(studentId, finalMarkedImage);
-
-            const randomSBD = "010" + String(currentBatch.students.length + 1).padStart(2, '0');
-            const sampleNames = ["Phan Minh Hoàng", "Đặng Phúc Minh Căn", "Phạm Thị Thúy Nga", "Lê Nguyễn Ngọc Hân", "Đỗ Ngọc Minh", "Nguyễn Vũ Khánh Ngọc"];
-            const detectedName = sampleNames[currentBatch.students.length % sampleNames.length];
-            const sampleClasses = ["11/1", "11/2", "11/3", "11/4", "11/6"];
-            const detectedClass = sampleClasses[currentBatch.students.length % sampleClasses.length];
+            await saveMarkedImageToDB(studentId, finalImage);
 
             currentBatch.students.unshift({
                 id: studentId,
-                name: detectedName,
-                className: detectedClass,
-                sbd: randomSBD,
-                code: detectedCode,
+                cropNameUrl: cropNameUrl,
+                sbd: detectedSBD,
+                code: finalExamCode,
                 p1Correct: p1Correct,
                 p1Score: p1Score,
                 p2Details: p2SummaryStr,
@@ -632,40 +727,38 @@
             });
             saveStorage();
 
-            // Rung nhẹ điện thoại báo đã chấm xong 1 bài (để giáo viên chuyển sang bài tiếp theo)
-            if (navigator.vibrate) navigator.vibrate(100);
-            
-            alert(`✓ ĐÃ CHẤM XONG: ${detectedName} (Lớp: ${detectedClass})\nMã đề: ${detectedCode} | SBD: ${randomSBD}\nĐiểm: ${totalScore}/7.0\n\n(Camera vẫn đang bật, bạn có thể đưa tiếp phiếu của học sinh khác vào để chấm liên tục!)`);
+            // Rung nhẹ máy để giáo viên biết đã chấm xong 1 bài
+            if (navigator.vibrate) navigator.vibrate(80);
         }
 
-        function drawCircleMarker(ctx, x, y, color, isFilled) {
+        function drawMarkerCircle(ctx, x, y, color, isFilled) {
             ctx.save();
             ctx.beginPath();
-            ctx.arc(x, y, 7, 0, 2 * Math.PI);
+            ctx.arc(x, y, 6.5, 0, 2 * Math.PI);
             if (isFilled) {
                 ctx.fillStyle = color;
                 ctx.globalAlpha = 0.65;
                 ctx.fill();
             }
-            ctx.lineWidth = 2.5;
+            ctx.lineWidth = 2.2;
             ctx.strokeStyle = color;
             ctx.globalAlpha = 1.0;
             ctx.stroke();
             ctx.restore();
         }
 
-        function drawCornerBox(ctx, x, y) {
+        function drawCornerBlock(ctx, x, y) {
             ctx.save();
             ctx.fillStyle = "#000000";
-            ctx.fillRect(x, y, 25, 25);
+            ctx.fillRect(x, y, 24, 24);
             ctx.strokeStyle = "#00E676";
             ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, 25, 25);
+            ctx.strokeRect(x, y, 24, 24);
             ctx.restore();
         }
 
         // =========================================================
-        // 6. XUẤT FILE EXCEL & QUÉT MÃ QR
+        // 6. XUẤT FILE EXCEL & NẠP QR
         // =========================================================
         function openExportModal() { document.getElementById('export-modal').style.display = 'flex'; }
         function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
@@ -673,7 +766,7 @@
         function exportToExcel(type) {
             closeExportModal();
             if (!currentBatch.students || currentBatch.students.length === 0) {
-                alert("Chưa có dữ liệu bài chấm!");
+                alert("Chưa có dữ liệu bài chấm để xuất file!");
                 return;
             }
             let exportData = [];
@@ -682,20 +775,20 @@
             if (type === 'DIEM') {
                 fileName = `Ket_Qua_Diem_${currentBatch.name}.xlsx`;
                 exportData = currentBatch.students.map((st, idx) => ({
-                    "STT": idx + 1, "Họ và Tên": st.name, "Lớp": st.className, "Số Báo Danh": st.sbd,
-                    "Mã Đề": st.code, "Điểm Phần I": st.p1Score, "Điểm Phần II": st.p2Score, "Tổng Điểm": st.total
+                    "STT": idx + 1, "Số Báo Danh": st.sbd, "Mã Đề": st.code,
+                    "Điểm Phần I": st.p1Score, "Điểm Phần II": st.p2Score, "Tổng Điểm": st.total
                 }));
             } else if (type === 'LUA_CHON') {
                 fileName = `Ket_Qua_Lua_Chon_${currentBatch.name}.xlsx`;
                 exportData = currentBatch.students.map((st, idx) => {
-                    let row = { "STT": idx + 1, "Họ Tên": st.name, "Lớp": st.className, "SBD": st.sbd, "Mã Đề": st.code };
+                    let row = { "STT": idx + 1, "SBD": st.sbd, "Mã Đề": st.code };
                     st.choicesP1.forEach((ans, qIdx) => { row[`Câu ${qIdx+1}`] = ans; });
                     return row;
                 });
             } else if (type === 'DUNG_SAI') {
                 fileName = `Ket_Qua_Dung_Sai_${currentBatch.name}.xlsx`;
                 exportData = currentBatch.students.map((st, idx) => {
-                    let row = { "STT": idx + 1, "Họ Tên": st.name, "Lớp": st.className, "SBD": st.sbd, "Mã Đề": st.code };
+                    let row = { "STT": idx + 1, "SBD": st.sbd, "Mã Đề": st.code };
                     st.choicesP2.forEach((pat, qIdx) => { row[`Câu ${qIdx+13}`] = pat; });
                     return row;
                 });
