@@ -38,19 +38,18 @@ jobs:
             "bundledWebRuntime": false
           }' > capacitor.config.json
 
-      - name: Install & Init Capacitor Android
+      - name: Install and Build Android Platform
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap add android
           npx cap sync android
 
-      - name: Clean Build and Generate APK
+      - name: Compile APK via Gradle Wrapper
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew clean
-          ./gradlew assembleDebug --info
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
