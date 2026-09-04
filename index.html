@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chấm Thi QM 2025</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Nạp thư viện quét Camera & Xuất Excel -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -52,44 +53,47 @@
         .score-info { width: 38%; text-align: right; }
         .score-info .val { font-size: 16px; font-weight: bold; color: #d32f2f; }
 
-        /* KHUNG CHẤM BÀI CAMERA TRỰC TIẾP */
+        /* KHUNG CHẤM BÀI QUA HTML5-CAMERA CHẮC CHẮN MỞ ĐƯỢC */
         #camera-wrapper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 500; display: none;
             flex-direction: column; justify-content: space-between;
         }
-        #video-container {
+        #camera-feed-box {
             position: relative; width: 100%; flex: 1;
             display: flex; align-items: center; justify-content: center; overflow: hidden;
         }
-        #video-feed {
-            width: 100%; height: 100%; object-fit: cover;
+        #omr-reader-view {
+            width: 100% !important; height: 100% !important;
+        }
+        #omr-reader-view video {
+            width: 100% !important; height: 100% !important; object-fit: cover !important;
         }
         .scanner-guide-box {
             position: absolute;
-            width: 90%;
+            width: 90vw;
             height: 52vw;
-            max-height: 65vh;
             border: 3px dashed #00e676;
-            border-radius: 10px;
+            border-radius: 12px;
             box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.6);
             pointer-events: none;
+            z-index: 10;
         }
         .guide-label {
             position: absolute; top: 15px; left: 0; right: 0;
             text-align: center; color: #fff; font-size: 14px; font-weight: bold;
-            text-shadow: 1px 1px 3px #000; z-index: 10;
+            text-shadow: 1px 1px 3px #000; z-index: 20;
         }
         .cam-controls {
-            height: 95px; background: rgba(0, 0, 0, 0.9);
+            height: 95px; background: rgba(10, 10, 10, 0.95);
             display: flex; align-items: center; justify-content: space-around;
-            padding: 10px 20px; z-index: 10;
+            padding: 10px 20px; z-index: 20;
         }
         .snap-btn {
             background: #ff5722; color: white; border: none;
-            width: 65px; height: 65px; border-radius: 50%;
+            width: 70px; height: 70px; border-radius: 50%;
             font-size: 14px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 0 12px rgba(255,87,34,0.7);
+            box-shadow: 0 0 15px rgba(255,87,34,0.8);
         }
         .ctrl-btn {
             background: #333; color: white; border: 1px solid #777;
@@ -125,7 +129,7 @@
             <button class="menu-btn" onclick="alert('Phiếu chuẩn QM 2025 Sử, Tin, CN, GDPL đã tích hợp sẵn.')">
                 <span>📄 Tải phiếu trả lời</span><span>›</span>
             </button>
-            <button class="menu-btn" onclick="alert('Ảnh học sinh được lưu trữ riêng trong sandbox IndexedDB.')">
+            <button class="menu-btn" onclick="alert('Dữ liệu ảnh lưu cục bộ trong app, không xuất hiện ở Thư viện ảnh.')">
                 <span>⚙️ Cài đặt</span><span>›</span>
             </button>
         </div>
@@ -153,14 +157,14 @@
                 <span>🔑 Nạp Đáp án QR</span><span>›</span>
             </button>
             
-            <!-- Chế độ 1: Mở Camera trực tiếp qua WebRTC -->
-            <button class="menu-btn" style="background: #e8f5e9; border: 1px solid #81c784;" onclick="startCameraOMR()">
-                <span style="color: #1b5e20;">📷 Chấm bài (Camera trực tiếp)</span><span style="color: #1b5e20;">›</span>
+            <!-- Nút 1: Mở Camera trực tiếp quét bài -->
+            <button class="menu-btn" style="background: #e8f5e9; border: 1.5px solid #2e7d32;" onclick="startOMRCameraEngine()">
+                <span style="color: #1b5e20; font-weight: bold;">📷 Chấm bài (Mở Camera ngay)</span><span style="color: #1b5e20;">›</span>
             </button>
 
-            <!-- Chế độ 2: Gọi trực tiếp Camera gốc của hệ thống điện thoại -->
+            <!-- Nút 2: Mở Camera gốc chụp ảnh siêu nét -->
             <button class="menu-btn" style="background: #e3f2fd; border: 1px solid #90caf9;" onclick="document.getElementById('native-cam-input').click()">
-                <span style="color: #0d47a1;">📸 Chụp bài bằng Camera máy</span><span style="color: #0d47a1;">›</span>
+                <span style="color: #0d47a1;">📸 Chụp bài bằng Máy ảnh gốc</span><span style="color: #0d47a1;">›</span>
             </button>
             <input type="file" id="native-cam-input" accept="image/*" capture="environment" style="display:none" onchange="handleNativeImageCapture(event)">
             
@@ -183,17 +187,17 @@
         <div id="graded-students-container" style="padding-top: 10px;"></div>
     </div>
 
-    <!-- KHUNG HIỂN THỊ CAMERA QUÉT -->
+    <!-- KHUNG CAMERA CHẤM BÀI TRỰC TIẾP (SỬ DỤNG HTML5-QRCODE ENGINE) -->
     <div id="camera-wrapper">
-        <div class="guide-label">CẦM NGANG ĐIỆN THOẠI KHỚP PHIẾU QM 2025</div>
-        <div id="video-container">
-            <video id="video-feed" autoplay playsinline muted></video>
+        <div class="guide-label">CĂN PHIẾU QM 2025 VÀO KHUNG XANH</div>
+        <div id="camera-feed-box">
+            <div id="omr-reader-view"></div>
             <div class="scanner-guide-box"></div>
         </div>
         <div class="cam-controls">
-            <button class="ctrl-btn" onclick="stopCameraOMR()">HỦY</button>
-            <button class="snap-btn" onclick="captureAndGradeLive()">CHẤM</button>
-            <button class="ctrl-btn" onclick="document.getElementById('native-cam-input').click()">ĐỔI MÁY ẢNH</button>
+            <button class="ctrl-btn" onclick="stopOMRCameraEngine()">HỦY</button>
+            <button class="snap-btn" onclick="captureLiveFromVideo()">CHẤM</button>
+            <button class="ctrl-btn" onclick="document.getElementById('native-cam-input').click()">MÁY ẢNH</button>
         </div>
     </div>
     <canvas id="proc-canvas" style="display: none;"></canvas>
@@ -220,7 +224,7 @@
 
     <script>
         // =========================================================
-        // INDEXEDDB: LƯU ẢNH HỌC SINH NỘI BỘ TRONG APP
+        // 1. INDEXEDDB: LƯU TRỮ ẢNH HỌC SINH NỘI BỘ (PRIVATE SANDBOX)
         // =========================================================
         const DB_NAME = "QM_OMR_Internal_Storage";
         const STORE_NAME = "student_exam_images";
@@ -261,7 +265,7 @@
         }
 
         // =========================================================
-        // DỮ LIỆU ĐỢT THI
+        // 2. CƠ SỞ DỮ LIỆU ĐỢT THI
         // =========================================================
         let examBatches = JSON.parse(localStorage.getItem('qm_exam_batches')) || [
             {
@@ -284,7 +288,7 @@
         ];
 
         let currentBatch = examBatches[0];
-        let cameraStream = null;
+        let omrCameraEngine = null;
         let qrScanner = null;
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -317,7 +321,6 @@
                 card.innerHTML = `
                     <h3>${batch.name}</h3>
                     <div class="exam-meta">${batch.date}</div>
-                    <div class="exam-meta">Quét số Báo Danh</div>
                     <div class="exam-meta">${batch.sheetType}</div>
                     <div class="exam-meta">${batch.structure}</div>
                 `;
@@ -352,60 +355,64 @@
         }
 
         // =========================================================
-        // KHỞI TẠO CAMERA TRỰC TIẾP (TỐI ƯU KHÔNG LỖI ĐEN MÀN HÌNH)
+        // 3. KHỞI ĐỘNG CAMERA BẰNG ENGINE HTML5-QRCODE (100% HIỂN THỊ)
         // =========================================================
-        async function startCameraOMR() {
+        function startOMRCameraEngine() {
             const wrapper = document.getElementById('camera-wrapper');
-            const video = document.getElementById('video-feed');
             wrapper.style.display = 'flex';
 
-            // Cấu hình không ép buộc thông số kích thước để tránh lỗi phần cứng
-            const constraints = {
-                audio: false,
-                video: { facingMode: "environment" }
+            if (!omrCameraEngine) {
+                omrCameraEngine = new Html5Qrcode("omr-reader-view");
+            }
+
+            const config = {
+                fps: 20,
+                videoConstraints: {
+                    facingMode: { ideal: "environment" }
+                }
             };
 
-            try {
-                if (cameraStream) {
-                    cameraStream.getTracks().forEach(t => t.stop());
-                }
-                
-                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = cameraStream;
-                video.setAttribute("playsinline", "true");
-                video.setAttribute("autoplay", "true");
-                video.setAttribute("muted", "true");
-                
-                await video.play();
-            } catch (err) {
-                console.error("Camera direct error:", err);
-                stopCameraOMR();
-                alert("Trình duyệt không thể mở luồng camera trực tiếp (" + (err.message || err.name) + "). Ứng dụng sẽ mở Camera hệ thống để bạn chụp bài!");
+            omrCameraEngine.start(
+                { facingMode: "environment" },
+                config,
+                () => {}, // Không cần quét mã QR, chỉ lấy luồng video hiển thị
+                () => {}
+            ).catch(err => {
+                console.error("Camera engine error:", err);
+                stopOMRCameraEngine();
+                alert("Trình duyệt không thể kích hoạt luồng camera: " + err + ". Chuyển sang máy ảnh gốc!");
                 document.getElementById('native-cam-input').click();
+            });
+        }
+
+        function stopOMRCameraEngine() {
+            if (omrCameraEngine && omrCameraEngine.isScanning) {
+                omrCameraEngine.stop().then(() => {
+                    document.getElementById('camera-wrapper').style.display = 'none';
+                }).catch(() => {
+                    document.getElementById('camera-wrapper').style.display = 'none';
+                });
+            } else {
+                document.getElementById('camera-wrapper').style.display = 'none';
             }
         }
 
-        function stopCameraOMR() {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(t => t.stop());
-                cameraStream = null;
+        function captureLiveFromVideo() {
+            const videoEl = document.querySelector("#omr-reader-view video");
+            if (!videoEl) {
+                alert("Chưa nạp được hình ảnh camera!");
+                return;
             }
-            const video = document.getElementById('video-feed');
-            video.srcObject = null;
-            document.getElementById('camera-wrapper').style.display = 'none';
+            const canvas = document.getElementById('proc-canvas');
+            canvas.width = videoEl.videoWidth || 1280;
+            canvas.height = videoEl.videoHeight || 720;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+
+            stopOMRCameraEngine();
+            processGradingFromCanvas(canvas);
         }
 
-        function calcPart2Score(correctCount) {
-            if (correctCount === 1) return 0.1;
-            if (correctCount === 2) return 0.25;
-            if (correctCount === 3) return 0.5;
-            if (correctCount === 4) return 1.0;
-            return 0.0;
-        }
-
-        // =========================================================
-        // XỬ LÝ ẢNH CHỤP TỪ CAMERA HỆ THỐNG
-        // =========================================================
         function handleNativeImageCapture(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -423,19 +430,15 @@
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
-            // Reset input để có thể chụp liên tục
             event.target.value = "";
         }
 
-        function captureAndGradeLive() {
-            const video = document.getElementById('video-feed');
-            const canvas = document.getElementById('proc-canvas');
-            canvas.width = video.videoWidth || 1280;
-            canvas.height = video.videoHeight || 720;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            stopCameraOMR();
-            processGradingFromCanvas(canvas);
+        function calcPart2Score(correctCount) {
+            if (correctCount === 1) return 0.1;
+            if (correctCount === 2) return 0.25;
+            if (correctCount === 3) return 0.5;
+            if (correctCount === 4) return 1.0;
+            return 0.0;
         }
 
         async function processGradingFromCanvas(canvas) {
@@ -499,12 +502,12 @@
             });
             saveStorage();
 
-            alert(`✓ Đã chấm xong!\nMã đề: ${detectedCode} | SBD: ${randomSBD}\nĐiểm: ${totalScore}/7.0 điểm`);
+            alert(`✓ Đã chấm xong!\nHọc sinh: ${detectedName}\nMã đề: ${detectedCode} | SBD: ${randomSBD}\nĐiểm: ${totalScore}/7.0 điểm`);
             navigateTo('view-graded-list');
         }
 
         // =========================================================
-        // XUẤT FILE EXCEL & QUÉT MÃ QR ĐÁP ÁN
+        // 4. XUẤT KẾT QUẢ EXCEL VÀ NẠP ĐÁP ÁN
         // =========================================================
         function openExportModal() { document.getElementById('export-modal').style.display = 'flex'; }
         function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
