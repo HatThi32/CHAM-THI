@@ -24,12 +24,17 @@ jobs:
           distribution: 'zulu'
           java-version: 17
 
+      - name: Prepare Web Directory
+        run: |
+          mkdir -p www
+          cp index.html www/
+
       - name: Create Capacitor Config
         run: |
           echo '{
             "appId": "com.chamthi.omr2025",
             "appName": "Cham Thi QM 2025",
-            "webDir": ".",
+            "webDir": "www",
             "bundledWebRuntime": false
           }' > capacitor.config.json
 
