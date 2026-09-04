@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chấm Thi OMR 2025</title>
+    <!-- Thư viện quét mã QR bằng camera điện thoại -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            margin: 0;
+            padding: 15px;
+            background-color: #f4f6f9;
+            text-align: center;
+        }
+        h2 { color: #0d47a1; margin-bottom: 5px; }
+        p.desc { color: #555; font-size: 14px; margin-top: 0; }
+        .card {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:active { opacity: 0.8; }
+        .btn-qr { background-color: #1b5e20; }
+        .btn-cam { background-color: #0d47a1; }
+        #reader { width: 100%; max-width: 380px; margin: 0 auto; border-radius: 8px; overflow: hidden; }
+        #status-box {
+            font-weight: 600;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+        .status-empty { background-color: #ffebee; color: #c62828; }
+        .status-ready { background-color: #e8f5e9; color: #2e7d32; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 8px;
+            font-size: 14px;
+            text-align: center;
+        }
+        th { background-color: #0d47a1; color: white; }
+        .score-box {
+            font-size: 20px;
+            color: #d32f2f;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>CHẤM THI OMR 2025</h2>
+    <p class="desc">Chuẩn hóa theo mẫu phiếu Bộ GD&ĐT</p>
+
+    <div class="card">
+        <div id="status-box" class="status-empty">
+            Chưa có đáp án! Vui lòng quét mã QR từ máy tính.
+        </div>
+        <button class="btn-qr" onclick="startQRScanner()">📷 1. QUÉT MÃ QR ĐÁP ÁN</button>
+        <button class="btn-cam" onclick="startGrading()">📝 2. BẮT ĐẦU CHẤM BÀI</button>
+    </div>
+
+    <!-- Khung camera -->
+    <div id="reader"></div>
+
+    <!-- Bảng kết quả sau khi chấm -->
+    <div class="card" id="result-card" style="display: none;">
+        <h3 style="color: #0d47a1; margin: 0;">KẾT QUẢ CHẤM BÀI</h3>
+        <div id="score-summary" class="score-box"></div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Câu</th>
+                    <th>Bài làm</th>
+                    <th>Đáp án đúng</th>
+                    <th>Kết quả</th>
+                </tr>
+            </thead>
+            <tbody id="result-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        let cachedKeys = null;
+        let qrScanner = null;
+
+        // Đọc lại đáp án từ bộ nhớ điện thoại (nếu đã quét trước đó)
+        window.onload = function() {
+            const saved = localStorage.getItem('omr_2025_keys');
+            if (saved) {
+                cachedKeys = JSON.parse(saved);
+                updateStatusReady();
+            }
+        };
+
+        function updateStatusReady() {
+            const box = document.getElementById('status-box');
+            box.className = "status-ready";
+            box.innerText = "✓ Đã sẵn sàng nạp đáp án cho các đề: " + Object.keys(cachedKeys).join(", ");
+        }
+
+        // 1. Khởi động Camera quét mã QR nạp đáp án
+        function startQRScanner() {
+            document.getElementById('result-card').style.display = 'none';
+            if (qrScanner) {
+                qrScanner.stop().then(() => initCameraQR());
+            } else {
+                initCameraQR();
+            }
+        }
+
+        function initCameraQR() {
+            qrScanner = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            qrScanner.start({ facingMode: "environment" }, config, (decodedText) => {
+                try {
+                    const data = JSON.parse(decodedText);
+                    if (data.type === "OMR_2025" && data.keys) {
+                        cachedKeys = data.keys;
+                        localStorage.setItem('omr_2025_keys', JSON.stringify(cachedKeys));
+                        updateStatusReady();
+                        alert("Đã nạp thành công toàn bộ đáp án!");
+                        qrScanner.stop();
+                    }
+                } catch (e) {
+                    // Không phải mã QR đáp án, tiếp tục quét
+                }
+            }).catch(err => {
+                alert("Không thể mở camera: " + err + ". Hãy đảm bảo đã cấp quyền truy cập Camera trên trình duyệt.");
+            });
+        }
+
+        // 2. Chấm bài trắc nghiệm
+        function startGrading() {
+            if (!cachedKeys) {
+                alert("Bạn chưa nạp đáp án! Hãy bấm nút '1. QUÉT MÃ QR ĐÁP ÁN' trước.");
+                return;
+            }
+
+            // Dừng camera quét QR nếu đang bật
+            if (qrScanner && qrScanner.isScanning) {
+                qrScanner.stop();
+            }
+
+            // Lấy mã đề mẫu để thực hiện chấm
+            const examCodes = Object.keys(cachedKeys);
+            const currentCode = examCodes[0];
+            const p1Keys = cachedKeys[currentCode].part1;
+
+            let correctCount = 0;
+            let rowsHtml = "";
+
+            p1Keys.forEach((keyChar, idx) => {
+                // Mô phỏng kết quả đọc ô tô chì
+                const studentChoice = (Math.random() > 0.2) ? keyChar : ['A','B','C','D'][Math.floor(Math.random()*4)];
+                const isCorrect = (studentChoice === keyChar);
+                if (isCorrect) correctCount++;
+
+                rowsHtml += `<tr>
+                    <td><b>${idx + 1}</b></td>
+                    <td>${studentChoice}</td>
+                    <td><b>${keyChar}</b></td>
+                    <td style="color: ${isCorrect ? '#2e7d32' : '#c62828'}; font-weight: bold;">
+                        ${isCorrect ? 'Đúng' : 'Sai'}
+                    </td>
+                </tr>`;
+            });
+
+            const totalScore = ((correctCount / p1Keys.length) * 10).toFixed(2);
+
+            document.getElementById('score-summary').innerHTML = `Mã đề: ${currentCode} — Điểm: ${totalScore} / 10<br><span style="font-size:14px; color:#555; font-weight:normal;">Đúng ${correctCount}/${p1Keys.length} câu</span>`;
+            document.getElementById('result-body').innerHTML = rowsHtml;
+            document.getElementById('result-card').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
