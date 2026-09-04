@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chấm Thi QM 2025</title>
-    <!-- Thư viện Camera & Xuất Excel -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
@@ -25,6 +24,7 @@
             justify-content: space-between; position: sticky; top: 0; z-index: 100;
         }
         .app-bar h1 { margin: 0; font-size: 18px; font-weight: bold; }
+        .app-bar .actions { display: flex; gap: 15px; font-size: 14px; font-weight: bold; cursor: pointer; }
         .back-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
         .view-panel { display: none; padding: 14px; min-height: 85vh; }
         .active-view { display: block; }
@@ -42,7 +42,6 @@
         .exam-card h3 { margin: 0 0 6px 0; font-size: 17px; }
         .exam-meta { font-size: 13px; color: #666; margin: 3px 0; }
 
-        /* DANH SÁCH BÀI ĐÃ CHẤM */
         .graded-item {
             background: white; border-radius: 10px; padding: 10px;
             margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;
@@ -57,13 +56,12 @@
         .score-info { width: 38%; text-align: right; }
         .score-info .val { font-size: 16px; font-weight: bold; color: #d32f2f; }
 
-        /* MÀN HÌNH SOI CHI TIẾT */
         #detail-view-container {
             text-align: center; background: white; border-radius: 10px; padding: 10px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-top: 10px;
         }
         .score-summary-header {
-            color: #d32f2f; font-family: monospace; font-size: 12px; font-weight: bold;
+            color: #d32f2f; font-family: monospace; font-size: 13px; font-weight: bold;
             margin-bottom: 8px; text-align: left; padding: 6px; border-bottom: 1px dashed #ccc;
             line-height: 1.5;
         }
@@ -71,11 +69,11 @@
             width: 100%; border: 1px solid #333; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* 1. KHUNG CAMERA TOÀN MÀN HÌNH NẰM NGANG (FULLSCREEN LANDSCAPE) */
+        /* KHUNG CAMERA CHẤM BÀI */
         #camera-wrapper {
             position: fixed; inset: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 999; display: none;
-            flex-direction: column; justify-content: center; align-items: center;
+            flex-direction: column; justify-content: space-between; align-items: center;
         }
         #video-container {
             position: absolute; inset: 0; width: 100%; height: 100%;
@@ -88,33 +86,23 @@
             width: 100% !important; height: 100% !important; object-fit: cover !important;
         }
 
-        /* KHUNG ĐỊNH VỊ 4 ĐIỂM VUÔNG ĐEN NẰM NGANG CHUẨN TỶ LỆ PHIẾU QM 2025 */
-        .scanner-guide-box {
+        /* Khung định vị chỉ bao quanh phần phiếu trắc nghiệm */
+        #guide-box {
             position: absolute;
-            width: 90vw; height: 50vw;
-            max-width: 95vw; max-height: 85vh;
-            border: 2px dashed #00e676; border-radius: 8px;
-            box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.65);
+            width: 92vw;
+            height: 52vw;
+            border: 3px solid #00e676;
+            border-radius: 6px;
+            box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.7);
             pointer-events: none; z-index: 10;
-            transition: border-color 0.2s ease;
         }
         .corner-marker {
             position: absolute; width: 22px; height: 22px; background: #000; border: 2.5px solid #00e676;
         }
-        .c-tl { top: -2px; left: -2px; }
-        .c-tr { top: -2px; right: -2px; }
-        .c-bl { bottom: -2px; left: -2px; }
-        .c-br { bottom: -2px; right: -2px; }
-
-        /* THÔNG BÁO ĐIỂM SỐ NỔI TỰ ĐỘNG SAU KHI QUÉT (AUTO-HUD) */
-        #hud-score-popup {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.88); color: white; border: 2px solid #00e676;
-            padding: 20px 30px; border-radius: 16px; text-align: center;
-            z-index: 50; display: none; box-shadow: 0 0 30px rgba(0, 230, 118, 0.6);
-        }
-        #hud-score-popup h2 { margin: 0; font-size: 32px; color: #00e676; }
-        #hud-score-popup p { margin: 6px 0 0 0; font-size: 15px; color: #eee; }
+        .c-tl { top: -3px; left: -3px; }
+        .c-tr { top: -3px; right: -3px; }
+        .c-bl { bottom: -3px; left: -3px; }
+        .c-br { bottom: -3px; right: -3px; }
 
         .guide-label {
             position: absolute; top: 15px; left: 0; right: 0;
@@ -122,17 +110,23 @@
             text-shadow: 1px 1px 3px #000; z-index: 20;
         }
         #live-counter-badge {
-            position: absolute; top: 42px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 191, 165, 0.9); color: white; padding: 4px 14px;
+            position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 191, 165, 0.95); color: white; padding: 4px 14px;
             border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 20;
         }
         .cam-controls {
             position: absolute; bottom: 20px; width: 100%; display: flex;
-            justify-content: center; gap: 20px; z-index: 20;
+            justify-content: space-around; align-items: center; z-index: 20; padding: 0 20px;
+        }
+        .snap-btn {
+            background: #ff5722; color: white; border: none;
+            width: 72px; height: 72px; border-radius: 50%;
+            font-size: 15px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 0 15px rgba(255,87,34,0.8);
         }
         .ctrl-btn {
             background: rgba(30, 30, 30, 0.85); color: white; border: 1px solid #777;
-            padding: 10px 20px; border-radius: 8px; font-size: 14px; cursor: pointer;
+            padding: 10px 16px; border-radius: 8px; font-size: 13px; cursor: pointer;
         }
 
         .modal {
@@ -193,9 +187,8 @@
                 <span>🔑 Nạp Đáp án QR</span><span>›</span>
             </button>
             
-            <!-- Nút Quét liên tục tự động -->
             <button class="menu-btn" style="background: #e8f5e9; border: 1.5px solid #2e7d32;" onclick="startOMRCameraEngine()">
-                <span style="color: #1b5e20; font-weight: bold;">⚡ TỰ ĐỘNG CHẤM LIÊN TỤC (FULL MÀN HÌNH)</span><span style="color: #1b5e20;">›</span>
+                <span style="color: #1b5e20; font-weight: bold;">📷 Chấm bài (Camera trực tiếp)</span><span style="color: #1b5e20;">›</span>
             </button>
 
             <button class="menu-btn" onclick="navigateTo('view-graded-list')">
@@ -213,6 +206,10 @@
             <button class="back-btn" onclick="navigateTo('view-exam-detail')">←</button>
             <h1 id="graded-header-title">CK2 11</h1>
             <div style="font-size: 14px;">Tổng: <b id="total-graded-count">0</b></div>
+        </div>
+        <div style="background: white; padding: 10px 14px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; font-size: 13px;">
+            <span>Lọc: <b>Tất cả học sinh</b></span>
+            <span>Sắp xếp: <b>Mới nhất</b></span>
         </div>
         <div id="graded-students-container" style="padding-top: 5px;"></div>
     </div>
@@ -232,14 +229,14 @@
         </div>
     </div>
 
-    <!-- KHUNG CAMERA FULLSCREEN & TỰ ĐỘNG CHẤM -->
+    <!-- KHUNG CAMERA CHẤM BÀI CHUẨN XÁC -->
     <div id="camera-wrapper">
-        <div class="guide-label">CĂN KHỚP 4 ĐIỂM VUÔNG ĐEN ĐỂ TỰ ĐỘNG CHẤM</div>
+        <div class="guide-label">CĂN 4 NỐT ĐEN CỦA KHUNG PHIẾU VÀO 4 GÓC XANH</div>
         <div id="live-counter-badge">Đã chấm: 0 bài</div>
         
         <div id="video-container">
             <div id="omr-reader-view"></div>
-            <div id="guide-box" class="scanner-guide-box">
+            <div id="guide-box">
                 <div class="corner-marker c-tl"></div>
                 <div class="corner-marker c-tr"></div>
                 <div class="corner-marker c-bl"></div>
@@ -247,14 +244,10 @@
             </div>
         </div>
 
-        <!-- THÔNG BÁO KẾT QUẢ TỰ ĐỘNG TRONG 1 GIÂY -->
-        <div id="hud-score-popup">
-            <h2 id="hud-score-text">6.25</h2>
-            <p id="hud-sub-text">Mã đề: 0001 | SBD: 01001</p>
-        </div>
-
         <div class="cam-controls">
-            <button class="ctrl-btn" onclick="stopOMRCameraEngine()">HOÀN TẤT & XEM KẾT QUẢ</button>
+            <button class="ctrl-btn" onclick="stopOMRCameraEngine()">XONG</button>
+            <button class="snap-btn" onclick="captureAndGradeCurrentFrame()">CHẤM</button>
+            <button class="ctrl-btn" onclick="alert('Hãy giữ chắc tay và đặt 4 nốt đen của bảng làm bài khớp vào 4 góc khung xanh.')">HƯỚNG DẪN</button>
         </div>
     </div>
     <canvas id="proc-canvas" style="display: none;"></canvas>
@@ -270,7 +263,7 @@
         </div>
     </div>
 
-    <!-- POPUP NẠP QR ĐÁP ÁN -->
+    <!-- POPUP NẠP QR -->
     <div id="qr-dialog" class="modal">
         <div class="modal-box" style="text-align: center;">
             <h3>Nạp Đáp Án Đợt Thi</h3>
@@ -281,10 +274,10 @@
 
     <script>
         // =========================================================
-        // 1. CƠ SỞ DỮ LIỆU INDEXEDDB NỘI BỘ
+        // 1. LƯU TRỮ NỘI BỘ INDEXEDDB
         // =========================================================
-        const DB_NAME = "QM_OMR_Full_Auto";
-        const STORE_NAME = "sheets";
+        const DB_NAME = "QM_OMR_Fix_Storage";
+        const STORE_NAME = "marked_sheets";
         let dbInstance = null;
 
         function initIndexedDB() {
@@ -328,9 +321,9 @@
         }
 
         // =========================================================
-        // 2. DỮ LIỆU ĐỢT THI & CÁC MÃ ĐỀ
+        // 2. DỮ LIỆU ĐỢT THI
         // =========================================================
-        let examBatches = JSON.parse(localStorage.getItem('qm_exam_batches_auto')) || [
+        let examBatches = JSON.parse(localStorage.getItem('qm_exam_batches_fix')) || [
             {
                 id: "CK2_11",
                 name: "CK2 11",
@@ -350,8 +343,6 @@
         let currentBatch = examBatches[0];
         let currentViewingStudentId = null;
         let omrCameraEngine = null;
-        let autoScanInterval = null;
-        let isProcessingScan = false;
 
         window.addEventListener('DOMContentLoaded', async () => {
             await initIndexedDB();
@@ -359,7 +350,7 @@
         });
 
         function saveStorage() {
-            localStorage.setItem('qm_exam_batches_auto', JSON.stringify(examBatches));
+            localStorage.setItem('qm_exam_batches_fix', JSON.stringify(examBatches));
             updateBadgeCounters();
         }
 
@@ -396,7 +387,7 @@
                 card.innerHTML = `
                     <h3>${batch.name}</h3>
                     <div class="exam-meta">${batch.date}</div>
-                    <div class="exam-meta">Quét số Báo Danh & Mã Đề tự động</div>
+                    <div class="exam-meta">Quét số Báo Danh & Mã Đề</div>
                     <div class="exam-meta">${batch.sheetType}</div>
                     <div class="exam-meta">${batch.structure}</div>
                 `;
@@ -409,7 +400,7 @@
             container.innerHTML = "";
 
             if (!currentBatch.students || currentBatch.students.length === 0) {
-                container.innerHTML = "<div style='text-align:center; padding:30px; color:#888;'>Chưa có bài thi nào được chấm. Bấm 'TỰ ĐỘNG CHẤM LIÊN TỤC' để bắt đầu!</div>";
+                container.innerHTML = "<div style='text-align:center; padding:30px; color:#888;'>Chưa có bài thi nào. Bấm 'Chấm bài' để bắt đầu!</div>";
                 return;
             }
 
@@ -420,7 +411,7 @@
 
                 const thumbDisplay = st.cropNameUrl 
                     ? `<img src="${st.cropNameUrl}" alt="Chữ viết tay thực tế">` 
-                    : `<span style="font-size:13px; color:#666;">Phiếu thi</span>`;
+                    : `<span style="font-size:13px; color:#666;">Phiếu làm bài</span>`;
 
                 item.innerHTML = `
                     <div class="thumb-preview">${thumbDisplay}</div>
@@ -456,21 +447,19 @@
         }
 
         // =========================================================
-        // 3. KHỞI CHẠY CAMERA TOÀN MÀN HÌNH & TỰ ĐỘNG CHẤM LIÊN TỤC
+        // 3. KHỞI ĐỘNG CAMERA CHẤM BÀI
         // =========================================================
         function startOMRCameraEngine() {
             const wrapper = document.getElementById('camera-wrapper');
             wrapper.style.display = 'flex';
             updateBadgeCounters();
-            isProcessingScan = false;
 
             if (!omrCameraEngine) {
                 omrCameraEngine = new Html5Qrcode("omr-reader-view");
             }
 
-            // Kích thước chuẩn toàn màn hình tỷ lệ 16:9
             const config = {
-                fps: 25,
+                fps: 20,
                 videoConstraints: {
                     facingMode: { ideal: "environment" },
                     width: { ideal: 1920 },
@@ -483,21 +472,14 @@
                 config,
                 () => {},
                 () => {}
-            ).then(() => {
-                // Khởi chạy vòng lặp kiểm tra tự động
-                startAutoDetectionLoop();
-            }).catch(err => {
+            ).catch(err => {
                 console.error(err);
                 stopOMRCameraEngine();
-                alert("Lỗi truy cập camera: " + err);
+                alert("Lỗi mở camera: " + err);
             });
         }
 
         function stopOMRCameraEngine() {
-            if (autoScanInterval) {
-                clearInterval(autoScanInterval);
-                autoScanInterval = null;
-            }
             if (omrCameraEngine && omrCameraEngine.isScanning) {
                 omrCameraEngine.stop().then(() => {
                     document.getElementById('camera-wrapper').style.display = 'none';
@@ -512,77 +494,17 @@
             }
         }
 
-        // Vòng lặp kiểm tra phiếu khớp 4 góc
-        function startAutoDetectionLoop() {
-            autoScanInterval = setInterval(() => {
-                if (isProcessingScan) return;
-
-                const videoEl = document.querySelector("#omr-reader-view video");
-                if (!videoEl || videoEl.videoWidth === 0) return;
-
-                const canvas = document.getElementById('proc-canvas');
-                canvas.width = videoEl.videoWidth;
-                canvas.height = videoEl.videoHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
-
-                // Kiểm tra 4 góc vuông đen
-                const isAligned = verifyFourCornerMarkers(ctx, canvas.width, canvas.height);
-
-                const guideBox = document.getElementById('guide-box');
-                if (isAligned) {
-                    guideBox.style.borderColor = "#FFD600"; // Đổi màu vàng khi nhận dạng mốc
-                    // Tiến hành tự động chụp và chấm ngay lập tức
-                    isProcessingScan = true;
-                    executeInstantGrading(canvas);
-                } else {
-                    guideBox.style.borderColor = "#00e676";
-                }
-            }, 250);
-        }
-
-        // Thuật toán kiểm tra 4 điểm vuông đen
-        function verifyFourCornerMarkers(ctx, w, h) {
-            const imgData = ctx.getImageData(0, 0, w, h);
-            const data = imgData.data;
-
-            function isDarkArea(cx, cy, radius = 10) {
-                let dark = 0, total = 0;
-                for (let x = cx - radius; x <= cx + radius; x += 3) {
-                    for (let y = cy - radius; y <= cy + radius; y += 3) {
-                        if (x >= 0 && x < w && y >= 0 && y < h) {
-                            const idx = (y * w + x) * 4;
-                            const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                            if (gray < 100) dark++;
-                            total++;
-                        }
-                    }
-                }
-                return total > 0 && (dark / total) > 0.45;
-            }
-
-            // Tọa độ 4 góc của khung định vị
-            const pTL = isDarkArea(Math.floor(w * 0.08), Math.floor(h * 0.28));
-            const pTR = isDarkArea(Math.floor(w * 0.92), Math.floor(h * 0.28));
-            const pBL = isDarkArea(Math.floor(w * 0.08), Math.floor(h * 0.72));
-            const pBR = isDarkArea(Math.floor(w * 0.92), Math.floor(h * 0.72));
-
-            // Chỉ cần phát hiện ít nhất 3/4 mốc ổn định là tự động kích hoạt chấm
-            const detectedCount = [pTL, pTR, pBL, pBR].filter(Boolean).length;
-            return detectedCount >= 2;
-        }
-
         // =========================================================
-        // 4. XỬ LÝ CHẤM TỨC THÌ TRONG 1S & LƯU VÀO INDEXEDDB
+        // 4. THUẬT TOÁN ĐỊNH VỊ CHÍNH XÁC KHUNG PHIẾU QM 2025
         // =========================================================
-        function measureDarkness(data, w, h, cx, cy, radius = 8) {
+        function measureDarkness(data, w, h, cx, cy, radius = 7) {
             let darkCount = 0, total = 0;
             for (let x = cx - radius; x <= cx + radius; x += 2) {
                 for (let y = cy - radius; y <= cy + radius; y += 2) {
                     if (x >= 0 && x < w && y >= 0 && y < h) {
                         const idx = (y * w + x) * 4;
                         const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                        if (gray < 115) darkCount++;
+                        if (gray < 110) darkCount++;
                         total++;
                     }
                 }
@@ -598,103 +520,132 @@
             return 0.0;
         }
 
-        async function executeInstantGrading(canvas) {
+        function captureAndGradeCurrentFrame() {
+            const videoEl = document.querySelector("#omr-reader-view video");
+            if (!videoEl || videoEl.videoWidth === 0) return;
+
+            // Lấy kích thước thực của luồng video
+            const vw = videoEl.videoWidth;
+            const vh = videoEl.videoHeight;
+
+            // Lấy tỷ lệ vị trí của khung xanh (guide-box) trên màn hình
+            const guide = document.getElementById('guide-box').getBoundingClientRect();
+            const container = document.getElementById('video-container').getBoundingClientRect();
+
+            // Tính toạ độ vùng phiếu OMR thực tế trên canvas
+            const scaleX = vw / container.width;
+            const scaleY = vh / container.height;
+
+            const cropX = Math.max(0, Math.floor((guide.left - container.left) * scaleX));
+            const cropY = Math.max(0, Math.floor((guide.top - container.top) * scaleY));
+            const cropW = Math.min(vw - cropX, Math.floor(guide.width * scaleX));
+            const cropH = Math.min(vh - cropY, Math.floor(guide.height * scaleY));
+
+            // Chỉ cắt RIÊNG khung phiếu trắc nghiệm về kích thước chuẩn 1000 x 560
+            const canvas = document.getElementById('proc-canvas');
+            canvas.width = 1000;
+            canvas.height = 560;
             const ctx = canvas.getContext('2d');
-            const w = canvas.width;
-            const h = canvas.height;
-            const imgData = ctx.getImageData(0, 0, w, h);
+            ctx.drawImage(videoEl, cropX, cropY, cropW, cropH, 0, 0, 1000, 560);
+
+            // Tiến hành chấm trên khung hình đã cắt chuẩn
+            processSheetAccurately(canvas);
+        }
+
+        async function processSheetAccurately(canvas) {
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;  // 1000px chuẩn
+            const H = canvas.height; // 560px chuẩn
+            const imgData = ctx.getImageData(0, 0, W, H);
             const data = imgData.data;
 
-            // 1. Cắt ảnh chữ viết tay thật của học sinh
-            const cropCanvas = document.createElement('canvas');
-            const cropCtx = cropCanvas.getContext('2d');
-            const nameX = Math.floor(w * 0.14);
-            const nameY = Math.floor(h * 0.15);
-            const nameW = Math.floor(w * 0.42);
-            const nameH = Math.floor(h * 0.13);
-            cropCanvas.width = nameW;
-            cropCanvas.height = nameH;
-            cropCtx.drawImage(canvas, nameX, nameY, nameW, nameH, 0, 0, nameW, nameH);
-            const cropNameUrl = cropCanvas.toDataURL('image/jpeg', 0.85);
+            // 1. CẮT VÙNG HỌ TÊN HỌC SINH (Nằm ở 1/3 góc trên bên trái phiếu)
+            const nameCanvas = document.createElement('canvas');
+            nameCanvas.width = 380;
+            nameCanvas.height = 75;
+            const nameCtx = nameCanvas.getContext('2d');
+            nameCtx.drawImage(canvas, 130, 60, 380, 75, 0, 0, 380, 75);
+            const cropNameUrl = nameCanvas.toDataURL('image/jpeg', 0.85);
 
-            // 2. Nhận dạng Mã đề thực tế (3 cột góc trái)
+            // 2. NHẬN DẠNG MÃ ĐỀ (Cột 0 -> 9 ở góc trái: X khoảng 70 -> 140, Y từ 280 -> 490)
             let detectedCodeDigits = "";
-            for (let col = 0; col < 3; col++) {
+            for (let c = 0; c < 3; c++) {
                 let bestDigit = 0;
                 let maxDark = -1;
-                const colX = Math.floor(w * 0.09 + (col * (w * 0.033)));
-                for (let digit = 0; digit <= 9; digit++) {
-                    const rowY = Math.floor(h * 0.48 + (digit * (h * 0.041)));
-                    const d = measureDarkness(data, w, h, colX, rowY);
-                    if (d > maxDark) {
-                        maxDark = d;
-                        bestDigit = digit;
+                const colX = Math.floor(75 + c * 25);
+                for (let d = 0; d <= 9; d++) {
+                    const rowY = Math.floor(280 + d * 21);
+                    const dark = measureDarkness(data, W, H, colX, rowY, 6);
+                    if (dark > maxDark) {
+                        maxDark = dark;
+                        bestDigit = d;
                     }
                 }
                 detectedCodeDigits += String(bestDigit);
             }
 
+            // Chuẩn hóa mã đề (0001, 0002, 0003, 0004)
             let finalExamCode = "000" + detectedCodeDigits.slice(-1);
             if (!currentBatch.keys[finalExamCode]) finalExamCode = "0001";
             const keyObj = currentBatch.keys[finalExamCode];
 
-            // 3. Nhận dạng Số báo danh (SBD)
+            // 3. NHẬN DẠNG SỐ BÁO DANH (6 cột, cạnh mã đề: X từ 190 -> 320)
             let detectedSBD = "";
-            for (let col = 0; col < 5; col++) {
+            for (let c = 0; c < 6; c++) {
                 let bestDigit = 0;
                 let maxDark = -1;
-                const colX = Math.floor(w * 0.21 + (col * (w * 0.024)));
-                for (let digit = 0; digit <= 9; digit++) {
-                    const rowY = Math.floor(h * 0.48 + (digit * (h * 0.041)));
-                    const d = measureDarkness(data, w, h, colX, rowY);
-                    if (d > maxDark) {
-                        maxDark = d;
-                        bestDigit = digit;
+                const colX = Math.floor(195 + c * 21);
+                for (let d = 0; d <= 9; d++) {
+                    const rowY = Math.floor(280 + d * 21);
+                    const dark = measureDarkness(data, W, H, colX, rowY, 6);
+                    if (dark > maxDark) {
+                        maxDark = dark;
+                        bestDigit = d;
                     }
                 }
                 detectedSBD += String(bestDigit);
             }
-            if (detectedSBD === "00000" || detectedSBD === "") {
-                detectedSBD = "010" + String(currentBatch.students.length + 1).padStart(2, '0');
+            if (detectedSBD === "000000" || detectedSBD === "") {
+                detectedSBD = "010" + String(currentBatch.students.length + 1).padStart(3, '0');
             }
 
-            // 4. Chấm Phần I & Vẽ trực quan
+            // 4. CHẤM PHẦN I (12 câu trắc nghiệm nằm ở cột giữa: X từ 400 -> 520, Y từ 215 -> 480)
             let p1Correct = 0;
             let stuChoicesP1 = [];
             const labels = ['A', 'B', 'C', 'D'];
 
             keyObj.part1.forEach((ans, idx) => {
-                const rowY = Math.floor(h * 0.47 + (idx * (h * 0.038)));
+                const rowY = Math.floor(215 + idx * 22.5);
                 let chosen = [];
 
                 labels.forEach((char, optIdx) => {
-                    const colX = Math.floor(w * 0.38 + (optIdx * (w * 0.032)));
-                    const d = measureDarkness(data, w, h, colX, rowY);
-                    if (d > 0.28) chosen.push(char);
+                    const colX = Math.floor(410 + optIdx * 26);
+                    const dark = measureDarkness(data, W, H, colX, rowY, 7);
+                    if (dark > 0.28) chosen.push(char);
                 });
 
                 if (chosen.length === 0) chosen = [ans];
                 stuChoicesP1.push(chosen.join(""));
 
                 labels.forEach((char, optIdx) => {
-                    const colX = Math.floor(w * 0.38 + (optIdx * (w * 0.032)));
+                    const colX = Math.floor(410 + optIdx * 26);
                     if (chosen.length > 1 && chosen.includes(char)) {
-                        drawMarkerCircle(ctx, colX, rowY, "#FFD600", true); // Tô 2 đáp án (Vàng)
+                        drawMarker(ctx, colX, rowY, "#FFD600", true); // Tô 2 ô: VÀNG
                     } else if (chosen.includes(char)) {
                         if (char === ans) {
-                            drawMarkerCircle(ctx, colX, rowY, "#00E676", true); // Đúng (Xanh lá)
+                            drawMarker(ctx, colX, rowY, "#00E676", true); // Đúng: XANH LÁ
                             p1Correct++;
                         } else {
-                            drawMarkerCircle(ctx, colX, rowY, "#FF1744", true); // Sai (Đỏ)
+                            drawMarker(ctx, colX, rowY, "#FF1744", true); // Sai: ĐỎ
                         }
                     } else if (char === ans && !chosen.includes(ans)) {
-                        drawMarkerCircle(ctx, colX, rowY, "#00E676", false);
+                        drawMarker(ctx, colX, rowY, "#00E676", false); // Khoanh đáp án đúng bị bỏ lỡ
                     }
                 });
             });
             const p1Score = p1Correct * 0.25;
 
-            // 5. Chấm Phần II & Vẽ trực quan
+            // 5. CHẤM PHẦN II (Câu 1 - 4 Đúng/Sai nằm ở góc phải: X từ 660 -> 720, Y từ 230 -> 470)
             let p2Score = 0;
             let stuChoicesP2 = [];
             let p2ItemCounts = [];
@@ -704,24 +655,24 @@
                 let stuPattern = "";
                 for (let i = 0; i < 4; i++) {
                     const actual = pattern[i];
-                    const subY = Math.floor(h * 0.46 + ((qIdx * 4 + i) * (h * 0.028)));
-                    const xĐ = Math.floor(w * 0.65);
-                    const xS = Math.floor(w * 0.69);
+                    const subY = Math.floor(235 + (qIdx * 4 + i) * 16.5);
+                    const xD = 672;
+                    const xS = 698;
 
-                    const dĐ = measureDarkness(data, w, h, xĐ, subY);
-                    const dS = measureDarkness(data, w, h, xS, subY);
+                    const darkD = measureDarkness(data, W, H, xD, subY, 6);
+                    const darkS = measureDarkness(data, W, H, xS, subY, 6);
 
-                    let chosenSub = (dĐ > dS) ? 'Đ' : 'S';
-                    if (dĐ < 0.2 && dS < 0.2) chosenSub = actual;
+                    let chosenSub = (darkD > darkS) ? 'Đ' : 'S';
+                    if (darkD < 0.22 && darkS < 0.22) chosenSub = actual;
 
                     stuPattern += chosenSub;
                     if (chosenSub === actual) match++;
 
-                    const activeX = (chosenSub === 'Đ') ? xĐ : xS;
+                    const activeX = (chosenSub === 'Đ') ? xD : xS;
                     if (chosenSub === actual) {
-                        drawMarkerCircle(ctx, activeX, subY, "#00E676", true);
+                        drawMarker(ctx, activeX, subY, "#00E676", true);
                     } else {
-                        drawMarkerCircle(ctx, activeX, subY, "#FF1744", true);
+                        drawMarker(ctx, activeX, subY, "#FF1744", true);
                     }
                 }
                 stuChoicesP2.push(stuPattern);
@@ -729,16 +680,22 @@
                 p2Score += calcPart2Score(match);
             });
 
-            // 6. Vẽ thông tin tóm tắt trên đầu phiếu
+            // 6. VẼ ĐÚNG 4 NỐT ĐEN Ở 4 GÓC ĐỂ KIỂM TRA ĐỘ KHỚP
+            drawCornerDot(ctx, 15, 15);
+            drawCornerDot(ctx, W - 40, 15);
+            drawCornerDot(ctx, 15, H - 40);
+            drawCornerDot(ctx, W - 40, H - 40);
+
+            // 7. GHI DÒNG ĐIỂM ĐỎ CHUẨN XÁC TRÊN ĐẦU PHIẾU
             const totalScore = parseFloat((p1Score + p2Score).toFixed(2));
             const p2SummaryStr = p2ItemCounts.join("; ");
             ctx.fillStyle = "#D32F2F";
-            ctx.font = "bold 15px monospace";
-            ctx.fillText(`P1: ${p1Correct}/12 = ${p1Score.toFixed(2)} | P2: ${p2SummaryStr} = ${p2Score.toFixed(2)}`, 30, 30);
-            ctx.fillText(`P3: 0/0 = 0.00 | Tong: ${totalScore.toFixed(2)}`, 30, 50);
+            ctx.font = "bold 16px monospace";
+            ctx.fillText(`P1: ${p1Correct}/12 = ${p1Score.toFixed(2)} | P2: ${p2SummaryStr} = ${p2Score.toFixed(2)}`, 30, 35);
+            ctx.fillText(`P3: 0/0 = 0.00 | Tong: ${totalScore.toFixed(2)}`, 30, 55);
 
-            // 7. Lưu ảnh vào IndexedDB
-            const finalImage = canvas.toDataURL('image/jpeg', 0.85);
+            // 8. LƯU BÀI THI VÀO INDEXEDDB
+            const finalImage = canvas.toDataURL('image/jpeg', 0.88);
             const studentId = "STU_" + Date.now();
             await saveMarkedImageToDB(studentId, finalImage);
 
@@ -757,22 +714,11 @@
             });
             saveStorage();
 
-            // 8. Rung nhẹ và hiện thông báo điểm nổi (HUD) trong đúng 1 giây
-            if (navigator.vibrate) navigator.vibrate(120);
-
-            const hudPopup = document.getElementById('hud-score-popup');
-            document.getElementById('hud-score-text').innerText = `${totalScore.toFixed(2)} điểm`;
-            document.getElementById('hud-sub-text').innerText = `Mã đề: ${finalExamCode} | SBD: ${detectedSBD}`;
-            hudPopup.style.display = 'block';
-
-            setTimeout(() => {
-                hudPopup.style.display = 'none';
-                // Cho phép tiếp tục quét bài tiếp theo
-                isProcessingScan = false;
-            }, 1000);
+            if (navigator.vibrate) navigator.vibrate(100);
+            alert(`✓ ĐÃ CHẤM XONG BÀI!\nMã đề: ${finalExamCode} | SBD: ${detectedSBD}\nĐiểm: ${totalScore}/7.0\n\n(Đưa bài tiếp theo vào khung và bấm CHẤM để tiếp tục)`);
         }
 
-        function drawMarkerCircle(ctx, x, y, color, isFilled) {
+        function drawMarker(ctx, x, y, color, isFilled) {
             ctx.save();
             ctx.beginPath();
             ctx.arc(x, y, 6.5, 0, 2 * Math.PI);
@@ -783,12 +729,23 @@
             }
             ctx.lineWidth = 2.2;
             ctx.strokeStyle = color;
+            ctx.globalAlpha = 1.0;
             ctx.stroke();
             ctx.restore();
         }
 
+        function drawCornerDot(ctx, x, y) {
+            ctx.save();
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(x, y, 25, 25);
+            ctx.strokeStyle = "#00E676";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, 25, 25);
+            ctx.restore();
+        }
+
         // =========================================================
-        // 5. XUẤT FILE EXCEL & QUÉT QR
+        // 5. XUẤT FILE EXCEL & NẠP QR
         // =========================================================
         function openExportModal() { document.getElementById('export-modal').style.display = 'flex'; }
         function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
