@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chấm Thi QM 2025</title>
+    <!-- Thư viện Camera & Xuất Excel -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
@@ -69,43 +70,69 @@
             width: 100%; border: 1px solid #333; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* KHUNG CAMERA CHẤM BÀI */
+        /* =========================================================
+           1. GIAO DIỆN CAMERA FULL MÀN HÌNH NẰM NGANG CHUẨN 100%
+        ========================================================= */
         #camera-wrapper {
             position: fixed; inset: 0; width: 100vw; height: 100vh;
-            background: #000; z-index: 999; display: none;
-            flex-direction: column; justify-content: space-between; align-items: center;
-        }
-        #video-container {
-            position: absolute; inset: 0; width: 100%; height: 100%;
-            overflow: hidden; display: flex; align-items: center; justify-content: center;
+            background: #000; z-index: 9999; display: none;
+            overflow: hidden;
         }
         #omr-reader-view {
-            width: 100% !important; height: 100% !important; position: absolute; inset: 0;
+            position: absolute; inset: 0; width: 100% !important; height: 100% !important;
         }
         #omr-reader-view video {
             width: 100% !important; height: 100% !important; object-fit: cover !important;
         }
 
-        /* Khung định vị chỉ bao quanh phần phiếu trắc nghiệm */
+        /* KHUNG ĐỊNH VỊ TO VỪA VẶN BẢNG TRẢ LỜI */
         #guide-box {
             position: absolute;
-            width: 92vw;
-            height: 52vw;
-            border: 3px solid #00e676;
-            border-radius: 6px;
-            box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.7);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90vw; height: 50vw;
+            max-width: 92vw; max-height: 85vh;
+            border: 2px dashed rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.6);
             pointer-events: none; z-index: 10;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .corner-marker {
-            position: absolute; width: 22px; height: 22px; background: #000; border: 2.5px solid #00e676;
+
+        /* 4 NỐT QUÉT TO, TRONG SUỐT HOÀN TOÀN, CÓ DẤU TÂM ĐỂ SOI KHỚP */
+        .corner-target {
+            position: absolute;
+            width: 36px; height: 36px;
+            background: transparent !important; /* Trong suốt hoàn toàn để nhìn xuyên qua */
+            border: 2.5px solid #00e676;
+            box-sizing: border-box;
         }
-        .c-tl { top: -3px; left: -3px; }
-        .c-tr { top: -3px; right: -3px; }
-        .c-bl { bottom: -3px; left: -3px; }
-        .c-br { bottom: -3px; right: -3px; }
+        /* Dấu cộng nhỏ ở tâm để dễ căn */
+        .corner-target::after {
+            content: "+";
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00e676; font-size: 14px; font-weight: bold;
+        }
+        .c-tl { top: -4px; left: -4px; }
+        .c-tr { top: -4px; right: -4px; }
+        .c-bl { bottom: -4px; left: -4px; }
+        .c-br { bottom: -4px; right: -4px; }
+
+        /* BẢNG ĐIỂM TỰ ĐỘNG HIỆN TRONG 1S */
+        #hud-score-popup {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.92);
+            color: white; border: 2.5px solid #00e676;
+            padding: 22px 35px; border-radius: 16px;
+            text-align: center; z-index: 100; display: none;
+            box-shadow: 0 0 35px rgba(0, 230, 118, 0.7);
+        }
+        #hud-score-popup h2 { margin: 0; font-size: 36px; color: #00e676; font-weight: bold; }
+        #hud-score-popup p { margin: 6px 0 0 0; font-size: 16px; color: #fff; }
 
         .guide-label {
-            position: absolute; top: 15px; left: 0; right: 0;
+            position: absolute; top: 14px; left: 0; right: 0;
             text-align: center; color: #fff; font-size: 13px; font-weight: bold;
             text-shadow: 1px 1px 3px #000; z-index: 20;
         }
@@ -114,19 +141,11 @@
             background: rgba(0, 191, 165, 0.95); color: white; padding: 4px 14px;
             border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 20;
         }
-        .cam-controls {
-            position: absolute; bottom: 20px; width: 100%; display: flex;
-            justify-content: space-around; align-items: center; z-index: 20; padding: 0 20px;
-        }
-        .snap-btn {
-            background: #ff5722; color: white; border: none;
-            width: 72px; height: 72px; border-radius: 50%;
-            font-size: 15px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 0 15px rgba(255,87,34,0.8);
-        }
-        .ctrl-btn {
-            background: rgba(30, 30, 30, 0.85); color: white; border: 1px solid #777;
-            padding: 10px 16px; border-radius: 8px; font-size: 13px; cursor: pointer;
+        .top-close-btn {
+            position: absolute; top: 12px; right: 15px;
+            background: rgba(40, 40, 40, 0.85); color: white; border: 1px solid #999;
+            padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: bold;
+            cursor: pointer; z-index: 30;
         }
 
         .modal {
@@ -187,8 +206,9 @@
                 <span>🔑 Nạp Đáp án QR</span><span>›</span>
             </button>
             
+            <!-- Nút Tự Động Chấm Toàn Màn Hình -->
             <button class="menu-btn" style="background: #e8f5e9; border: 1.5px solid #2e7d32;" onclick="startOMRCameraEngine()">
-                <span style="color: #1b5e20; font-weight: bold;">📷 Chấm bài (Camera trực tiếp)</span><span style="color: #1b5e20;">›</span>
+                <span style="color: #1b5e20; font-weight: bold;">⚡ TỰ ĐỘNG CHẤM (FULL MÀN HÌNH NGANG)</span><span style="color: #1b5e20;">›</span>
             </button>
 
             <button class="menu-btn" onclick="navigateTo('view-graded-list')">
@@ -229,25 +249,28 @@
         </div>
     </div>
 
-    <!-- KHUNG CAMERA CHẤM BÀI CHUẨN XÁC -->
+    <!-- =========================================================
+         KHUNG CAMERA FULLSCREEN & TỰ CĂN CHỈNH TỰ CHỤP
+    ========================================================= -->
     <div id="camera-wrapper">
-        <div class="guide-label">CĂN 4 NỐT ĐEN CỦA KHUNG PHIẾU VÀO 4 GÓC XANH</div>
+        <div class="guide-label">SOI 4 NỐT VUÔNG ĐEN VÀO 4 Ô TRONG SUỐT ĐỂ TỰ CHỤP</div>
         <div id="live-counter-badge">Đã chấm: 0 bài</div>
-        
-        <div id="video-container">
-            <div id="omr-reader-view"></div>
-            <div id="guide-box">
-                <div class="corner-marker c-tl"></div>
-                <div class="corner-marker c-tr"></div>
-                <div class="corner-marker c-bl"></div>
-                <div class="corner-marker c-br"></div>
-            </div>
+        <button class="top-close-btn" onclick="stopOMRCameraEngine()">HOÀN TẤT</button>
+
+        <div id="omr-reader-view"></div>
+
+        <!-- KHUNG NGẮM CÓ 4 Ô TRONG SUỐT -->
+        <div id="guide-box">
+            <div class="corner-target c-tl"></div>
+            <div class="corner-target c-tr"></div>
+            <div class="corner-target c-bl"></div>
+            <div class="corner-target c-br"></div>
         </div>
 
-        <div class="cam-controls">
-            <button class="ctrl-btn" onclick="stopOMRCameraEngine()">XONG</button>
-            <button class="snap-btn" onclick="captureAndGradeCurrentFrame()">CHẤM</button>
-            <button class="ctrl-btn" onclick="alert('Hãy giữ chắc tay và đặt 4 nốt đen của bảng làm bài khớp vào 4 góc khung xanh.')">HƯỚNG DẪN</button>
+        <!-- BẢNG ĐIỂM TỰ ĐỘNG NỔI LÊN TRONG ĐÚNG 1 GIÂY -->
+        <div id="hud-score-popup">
+            <h2 id="hud-score-text">6.25</h2>
+            <p id="hud-sub-text">Mã đề: 0001 | SBD: 01001</p>
         </div>
     </div>
     <canvas id="proc-canvas" style="display: none;"></canvas>
@@ -268,7 +291,7 @@
         <div class="modal-box" style="text-align: center;">
             <h3>Nạp Đáp Án Đợt Thi</h3>
             <div id="qr-reader" style="width: 100%; margin: 0 auto;"></div>
-            <button class="ctrl-btn" style="width: 100%; margin-top: 10px;" onclick="closeKeySyncDialog()">Đóng</button>
+            <button style="background: #333; color: white; border: none; padding: 10px; border-radius: 6px; width: 100%; margin-top: 10px;" onclick="closeKeySyncDialog()">Đóng</button>
         </div>
     </div>
 
@@ -276,7 +299,7 @@
         // =========================================================
         // 1. LƯU TRỮ NỘI BỘ INDEXEDDB
         // =========================================================
-        const DB_NAME = "QM_OMR_Fix_Storage";
+        const DB_NAME = "QM_OMR_Auto_DB";
         const STORE_NAME = "marked_sheets";
         let dbInstance = null;
 
@@ -323,7 +346,7 @@
         // =========================================================
         // 2. DỮ LIỆU ĐỢT THI
         // =========================================================
-        let examBatches = JSON.parse(localStorage.getItem('qm_exam_batches_fix')) || [
+        let examBatches = JSON.parse(localStorage.getItem('qm_exam_batches_auto_final')) || [
             {
                 id: "CK2_11",
                 name: "CK2 11",
@@ -343,6 +366,9 @@
         let currentBatch = examBatches[0];
         let currentViewingStudentId = null;
         let omrCameraEngine = null;
+        let autoScanTimer = null;
+        let isProcessing = false;
+        let stableCounter = 0;
 
         window.addEventListener('DOMContentLoaded', async () => {
             await initIndexedDB();
@@ -350,7 +376,7 @@
         });
 
         function saveStorage() {
-            localStorage.setItem('qm_exam_batches_fix', JSON.stringify(examBatches));
+            localStorage.setItem('qm_exam_batches_auto_final', JSON.stringify(examBatches));
             updateBadgeCounters();
         }
 
@@ -387,7 +413,7 @@
                 card.innerHTML = `
                     <h3>${batch.name}</h3>
                     <div class="exam-meta">${batch.date}</div>
-                    <div class="exam-meta">Quét số Báo Danh & Mã Đề</div>
+                    <div class="exam-meta">Quét số Báo Danh & Mã Đề tự động</div>
                     <div class="exam-meta">${batch.sheetType}</div>
                     <div class="exam-meta">${batch.structure}</div>
                 `;
@@ -400,7 +426,7 @@
             container.innerHTML = "";
 
             if (!currentBatch.students || currentBatch.students.length === 0) {
-                container.innerHTML = "<div style='text-align:center; padding:30px; color:#888;'>Chưa có bài thi nào. Bấm 'Chấm bài' để bắt đầu!</div>";
+                container.innerHTML = "<div style='text-align:center; padding:30px; color:#888;'>Chưa có bài thi nào. Bấm 'TỰ ĐỘNG CHẤM' để bắt đầu!</div>";
                 return;
             }
 
@@ -411,7 +437,7 @@
 
                 const thumbDisplay = st.cropNameUrl 
                     ? `<img src="${st.cropNameUrl}" alt="Chữ viết tay thực tế">` 
-                    : `<span style="font-size:13px; color:#666;">Phiếu làm bài</span>`;
+                    : `<span style="font-size:13px; color:#666;">Phiếu thi</span>`;
 
                 item.innerHTML = `
                     <div class="thumb-preview">${thumbDisplay}</div>
@@ -447,19 +473,21 @@
         }
 
         // =========================================================
-        // 3. KHỞI ĐỘNG CAMERA CHẤM BÀI
+        // 3. KHỞI CHẠY CAMERA FULLSCREEN & VÒNG LẶP TỰ ĐỘNG CHẤM
         // =========================================================
         function startOMRCameraEngine() {
             const wrapper = document.getElementById('camera-wrapper');
-            wrapper.style.display = 'flex';
+            wrapper.style.display = 'block';
             updateBadgeCounters();
+            isProcessing = false;
+            stableCounter = 0;
 
             if (!omrCameraEngine) {
                 omrCameraEngine = new Html5Qrcode("omr-reader-view");
             }
 
             const config = {
-                fps: 20,
+                fps: 25,
                 videoConstraints: {
                     facingMode: { ideal: "environment" },
                     width: { ideal: 1920 },
@@ -472,14 +500,21 @@
                 config,
                 () => {},
                 () => {}
-            ).catch(err => {
+            ).then(() => {
+                // Chạy vòng lặp tự động phát hiện 4 góc mỗi 150ms
+                startRealtimeAutoDetection();
+            }).catch(err => {
                 console.error(err);
                 stopOMRCameraEngine();
-                alert("Lỗi mở camera: " + err);
+                alert("Không thể mở Camera: " + err);
             });
         }
 
         function stopOMRCameraEngine() {
+            if (autoScanTimer) {
+                clearInterval(autoScanTimer);
+                autoScanTimer = null;
+            }
             if (omrCameraEngine && omrCameraEngine.isScanning) {
                 omrCameraEngine.stop().then(() => {
                     document.getElementById('camera-wrapper').style.display = 'none';
@@ -494,15 +529,90 @@
             }
         }
 
+        // Vòng lặp kiểm tra tự động 4 nốt đen
+        function startRealtimeAutoDetection() {
+            autoScanTimer = setInterval(() => {
+                if (isProcessing) return;
+
+                const videoEl = document.querySelector("#omr-reader-view video");
+                if (!videoEl || videoEl.videoWidth === 0) return;
+
+                const vw = videoEl.videoWidth;
+                const vh = videoEl.videoHeight;
+                const guide = document.getElementById('guide-box').getBoundingClientRect();
+                const container = document.getElementById('camera-wrapper').getBoundingClientRect();
+
+                const scaleX = vw / container.width;
+                const scaleY = vh / container.height;
+
+                const cropX = Math.max(0, Math.floor((guide.left - container.left) * scaleX));
+                const cropY = Math.max(0, Math.floor((guide.top - container.top) * scaleY));
+                const cropW = Math.min(vw - cropX, Math.floor(guide.width * scaleX));
+                const cropH = Math.min(vh - cropY, Math.floor(guide.height * scaleY));
+
+                const canvas = document.getElementById('proc-canvas');
+                canvas.width = 1000;
+                canvas.height = 560;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(videoEl, cropX, cropY, cropW, cropH, 0, 0, 1000, 560);
+
+                // Đo độ khớp 4 nốt vuông đen ở 4 góc
+                const isMatched = checkFourCornersMatch(ctx, 1000, 560);
+
+                const guideBox = document.getElementById('guide-box');
+                if (isMatched) {
+                    stableCounter++;
+                    guideBox.style.borderColor = "#00e676";
+                    // Giữ ổn định trong 2 nhịp quét (khoảng 0.3s) là tự động chụp
+                    if (stableCounter >= 2) {
+                        isProcessing = true;
+                        stableCounter = 0;
+                        triggerAutoGrade(canvas);
+                    }
+                } else {
+                    stableCounter = 0;
+                    guideBox.style.borderColor = "rgba(255, 255, 255, 0.7)";
+                }
+            }, 150);
+        }
+
+        function checkFourCornersMatch(ctx, W, H) {
+            const imgData = ctx.getImageData(0, 0, W, H);
+            const data = imgData.data;
+
+            function isBlackCorner(cx, cy) {
+                let dark = 0, total = 0;
+                for (let x = cx - 10; x <= cx + 10; x += 3) {
+                    for (let y = cy - 10; y <= cy + 10; y += 3) {
+                        if (x >= 0 && x < W && y >= 0 && y < H) {
+                            const idx = (y * W + x) * 4;
+                            const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                            if (gray < 90) dark++; // Nốt in màu đen tuyền
+                            total++;
+                        }
+                    }
+                }
+                return total > 0 && (dark / total) > 0.40;
+            }
+
+            const tl = isBlackCorner(25, 25);
+            const tr = isBlackCorner(W - 25, 25);
+            const bl = isBlackCorner(25, H - 25);
+            const br = isBlackCorner(W - 25, H - 25);
+
+            // Khớp ít nhất 3 trên 4 góc
+            return [tl, tr, bl, br].filter(Boolean).length >= 3;
+        }
+
         // =========================================================
-        // 4. THUẬT TOÁN ĐỊNH VỊ CHÍNH XÁC KHUNG PHIẾU QM 2025
+        // 4. CHẤM BÀI, HIỆN ĐIỂM 1S & LƯU VÀO INDEXEDDB
         // =========================================================
-        function measureDarkness(data, w, h, cx, cy, radius = 7) {
+        function measureDarkness(data, W, H, cx, cy, radius = 7) {
             let darkCount = 0, total = 0;
             for (let x = cx - radius; x <= cx + radius; x += 2) {
                 for (let y = cy - radius; y <= cy + radius; y += 2) {
-                    if (x >= 0 && x < w && y >= 0 && y < h) {
-                        const idx = (y * w + x) * 4;
+                    if (x >= 0 && x < W && y >= 0 && y < H) {
+                        const idx = (y * W + x) * 4;
                         const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
                         if (gray < 110) darkCount++;
                         total++;
@@ -520,46 +630,14 @@
             return 0.0;
         }
 
-        function captureAndGradeCurrentFrame() {
-            const videoEl = document.querySelector("#omr-reader-view video");
-            if (!videoEl || videoEl.videoWidth === 0) return;
-
-            // Lấy kích thước thực của luồng video
-            const vw = videoEl.videoWidth;
-            const vh = videoEl.videoHeight;
-
-            // Lấy tỷ lệ vị trí của khung xanh (guide-box) trên màn hình
-            const guide = document.getElementById('guide-box').getBoundingClientRect();
-            const container = document.getElementById('video-container').getBoundingClientRect();
-
-            // Tính toạ độ vùng phiếu OMR thực tế trên canvas
-            const scaleX = vw / container.width;
-            const scaleY = vh / container.height;
-
-            const cropX = Math.max(0, Math.floor((guide.left - container.left) * scaleX));
-            const cropY = Math.max(0, Math.floor((guide.top - container.top) * scaleY));
-            const cropW = Math.min(vw - cropX, Math.floor(guide.width * scaleX));
-            const cropH = Math.min(vh - cropY, Math.floor(guide.height * scaleY));
-
-            // Chỉ cắt RIÊNG khung phiếu trắc nghiệm về kích thước chuẩn 1000 x 560
-            const canvas = document.getElementById('proc-canvas');
-            canvas.width = 1000;
-            canvas.height = 560;
+        async function triggerAutoGrade(canvas) {
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(videoEl, cropX, cropY, cropW, cropH, 0, 0, 1000, 560);
-
-            // Tiến hành chấm trên khung hình đã cắt chuẩn
-            processSheetAccurately(canvas);
-        }
-
-        async function processSheetAccurately(canvas) {
-            const ctx = canvas.getContext('2d');
-            const W = canvas.width;  // 1000px chuẩn
-            const H = canvas.height; // 560px chuẩn
+            const W = 1000;
+            const H = 560;
             const imgData = ctx.getImageData(0, 0, W, H);
             const data = imgData.data;
 
-            // 1. CẮT VÙNG HỌ TÊN HỌC SINH (Nằm ở 1/3 góc trên bên trái phiếu)
+            // 1. CẮT ẢNH HỌ TÊN HỌC SINH THẬT
             const nameCanvas = document.createElement('canvas');
             nameCanvas.width = 380;
             nameCanvas.height = 75;
@@ -567,7 +645,7 @@
             nameCtx.drawImage(canvas, 130, 60, 380, 75, 0, 0, 380, 75);
             const cropNameUrl = nameCanvas.toDataURL('image/jpeg', 0.85);
 
-            // 2. NHẬN DẠNG MÃ ĐỀ (Cột 0 -> 9 ở góc trái: X khoảng 70 -> 140, Y từ 280 -> 490)
+            // 2. NHẬN DẠNG MÃ ĐỀ (3 CỘT: X từ 75 -> 125, Y từ 280 -> 470)
             let detectedCodeDigits = "";
             for (let c = 0; c < 3; c++) {
                 let bestDigit = 0;
@@ -584,12 +662,11 @@
                 detectedCodeDigits += String(bestDigit);
             }
 
-            // Chuẩn hóa mã đề (0001, 0002, 0003, 0004)
             let finalExamCode = "000" + detectedCodeDigits.slice(-1);
             if (!currentBatch.keys[finalExamCode]) finalExamCode = "0001";
             const keyObj = currentBatch.keys[finalExamCode];
 
-            // 3. NHẬN DẠNG SỐ BÁO DANH (6 cột, cạnh mã đề: X từ 190 -> 320)
+            // 3. NHẬN DẠNG SỐ BÁO DANH (6 CỘT: X từ 195 -> 300)
             let detectedSBD = "";
             for (let c = 0; c < 6; c++) {
                 let bestDigit = 0;
@@ -609,7 +686,7 @@
                 detectedSBD = "010" + String(currentBatch.students.length + 1).padStart(3, '0');
             }
 
-            // 4. CHẤM PHẦN I (12 câu trắc nghiệm nằm ở cột giữa: X từ 400 -> 520, Y từ 215 -> 480)
+            // 4. CHẤM PHẦN I (12 CÂU) & VẼ CHẤM TRỰC TIẾP
             let p1Correct = 0;
             let stuChoicesP1 = [];
             const labels = ['A', 'B', 'C', 'D'];
@@ -645,7 +722,7 @@
             });
             const p1Score = p1Correct * 0.25;
 
-            // 5. CHẤM PHẦN II (Câu 1 - 4 Đúng/Sai nằm ở góc phải: X từ 660 -> 720, Y từ 230 -> 470)
+            // 5. CHẤM PHẦN II (ĐÚNG/SAI BẬC THANG)
             let p2Score = 0;
             let stuChoicesP2 = [];
             let p2ItemCounts = [];
@@ -680,13 +757,7 @@
                 p2Score += calcPart2Score(match);
             });
 
-            // 6. VẼ ĐÚNG 4 NỐT ĐEN Ở 4 GÓC ĐỂ KIỂM TRA ĐỘ KHỚP
-            drawCornerDot(ctx, 15, 15);
-            drawCornerDot(ctx, W - 40, 15);
-            drawCornerDot(ctx, 15, H - 40);
-            drawCornerDot(ctx, W - 40, H - 40);
-
-            // 7. GHI DÒNG ĐIỂM ĐỎ CHUẨN XÁC TRÊN ĐẦU PHIẾU
+            // 6. GHI THÔNG TIN ĐIỂM ĐỎ TRÊN ĐẦU PHIẾU
             const totalScore = parseFloat((p1Score + p2Score).toFixed(2));
             const p2SummaryStr = p2ItemCounts.join("; ");
             ctx.fillStyle = "#D32F2F";
@@ -694,7 +765,7 @@
             ctx.fillText(`P1: ${p1Correct}/12 = ${p1Score.toFixed(2)} | P2: ${p2SummaryStr} = ${p2Score.toFixed(2)}`, 30, 35);
             ctx.fillText(`P3: 0/0 = 0.00 | Tong: ${totalScore.toFixed(2)}`, 30, 55);
 
-            // 8. LƯU BÀI THI VÀO INDEXEDDB
+            // 7. LƯU ẢNH VÀO INDEXEDDB NỘI BỘ
             const finalImage = canvas.toDataURL('image/jpeg', 0.88);
             const studentId = "STU_" + Date.now();
             await saveMarkedImageToDB(studentId, finalImage);
@@ -714,8 +785,19 @@
             });
             saveStorage();
 
+            // 8. RUNG MÁY VÀ HIỂN THỊ ĐIỂM SỐ ĐÚNG 1 GIÂY
             if (navigator.vibrate) navigator.vibrate(100);
-            alert(`✓ ĐÃ CHẤM XONG BÀI!\nMã đề: ${finalExamCode} | SBD: ${detectedSBD}\nĐiểm: ${totalScore}/7.0\n\n(Đưa bài tiếp theo vào khung và bấm CHẤM để tiếp tục)`);
+
+            const hudPopup = document.getElementById('hud-score-popup');
+            document.getElementById('hud-score-text').innerText = `${totalScore.toFixed(2)} điểm`;
+            document.getElementById('hud-sub-text').innerText = `Mã đề: ${finalExamCode} | SBD: ${detectedSBD}`;
+            hudPopup.style.display = 'block';
+
+            setTimeout(() => {
+                hudPopup.style.display = 'none';
+                // Mở khóa để người dùng quét bài tiếp theo
+                isProcessing = false;
+            }, 1000);
         }
 
         function drawMarker(ctx, x, y, color, isFilled) {
@@ -729,18 +811,7 @@
             }
             ctx.lineWidth = 2.2;
             ctx.strokeStyle = color;
-            ctx.globalAlpha = 1.0;
             ctx.stroke();
-            ctx.restore();
-        }
-
-        function drawCornerDot(ctx, x, y) {
-            ctx.save();
-            ctx.fillStyle = "#000000";
-            ctx.fillRect(x, y, 25, 25);
-            ctx.strokeStyle = "#00E676";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, 25, 25);
             ctx.restore();
         }
 
